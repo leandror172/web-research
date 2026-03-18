@@ -1,0 +1,18 @@
+# Claude Code
+.claude/local/
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.pytest_cache/
+
+# Spike outputs (raw fetched content and extracted JSON)
+spike/output/*.md
+spike/output/*.json
+
+# uv
+.python-version

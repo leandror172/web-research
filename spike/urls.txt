@@ -1,0 +1,13 @@
+# Test URLs for extraction spike
+# One URL per line. Chosen because we know what's on these pages.
+
+# Tool landing pages
+https://crawl4ai.com
+https://docs.stagehand.dev
+
+# GitHub READMEs
+https://github.com/LearningCircuit/local-deep-research
+https://github.com/jina-ai/node-DeepResearch
+
+# Documentation pages
+https://docs.crawl4ai.com/core/quickstart

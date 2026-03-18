@@ -1,0 +1,32 @@
+# Session Log
+
+---
+
+## 2026-03-18 — Session 1: Repo Setup
+
+### Context
+
+New repo created for the web research tool, designed in sessions 44/44b of the LLM
+infrastructure project. Full design docs in `/mnt/i/workspaces/llm/docs/research/`.
+
+### What Was Done
+
+- Initialized git repo at `/mnt/i/workspaces/web-research/`
+- Installed all three overlays: ref-indexing, ollama-scaffolding, session-tracking
+- Wrote project-specific CLAUDE.md, session-context.md, tasks.md
+- Copied research docs to docs/research/ (vision, spike plan, DDD patterns, agent naming)
+- Created spike/ directory skeleton per mvp-spike-plan.md
+- session-handoff skill installed at user level (~/.claude/skills/)
+
+### Decisions Made
+
+- session-tracking overlay created in LLM repo (PR #19) — first real use is this repo
+- Language: Python for spike, overall language TBD after spike validates extraction quality
+- Repo name `web-research` is a placeholder — rename when better name emerges
+- Research docs copied here (not symlinked) — new repo evolves them freely; LLM repo keeps originals as historical reference
+
+### Next
+
+- [ ] 1.1 — Implement `spike/extract.py`: fetch → clean → extract via Ollama → save JSON
+
+---
