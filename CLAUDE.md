@@ -61,6 +61,16 @@ Key rules (detail in the reference file):
 - First-call timeouts are `TIMEOUT_COLD_START`, not REJECTED — retry immediately
 <!-- /overlay:ollama-scaffolding -->
 
+## Python Code Generation Model Priority
+
+When calling `generate_code` for Python, use these models in order (first available wins):
+
+1. `my-python-q3c30` — highest quality, deterministic (needs RAM offloading, use timeout=300)
+2. `my-python-q25c14` — best VRAM-only option, fast, consistent
+3. `my-python-dsc16` — solid alternative if above unavailable
+
+Benchmark data: `docs/research/python-codegen-model-benchmark.md`
+
 ## Repository Purpose
 
 Local-model-powered web research workbench. Fetches, extracts, and accumulates knowledge

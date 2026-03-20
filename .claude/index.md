@@ -31,7 +31,11 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 
 | File | Purpose |
 |------|---------|
-| *(add entries here)* | |
+| `docs/research/python-codegen-model-benchmark.md` | Benchmark of 8 Ollama personas for Python code gen — model priority list |
+| `spike/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
+| `spike/fetcher.py` | HttpxFetcher implementation (Fetcher protocol) |
+| `spike/cleaners.py` | TrafilaturaCleaner + Html2TextCleaner implementations (Cleaner protocol) |
+| `pyproject.toml` | Project config — uv, dependencies (httpx, trafilatura, html2text) |
 
 ---
 
