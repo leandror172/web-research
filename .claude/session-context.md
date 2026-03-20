@@ -12,9 +12,10 @@
 ## Current Status
 
 - **Active phase:** Phase 1 — MVP Spike
-- **Next:** Implement `spike/extract.py` — single-script extraction proof of concept
-- **Language:** Python (spike phase); overall language TBD after spike validates extraction quality
-- **Key pending decision:** Language for MVP beyond spike (Python / TypeScript / Go / polyglot)
+- **Next:** Implement OllamaExtractor, JsonOutputWriter, prompts, main script (spike/extract.py)
+- **Language:** Python confirmed for MVP (uv + pyproject.toml)
+- **Completed:** Protocol definitions, Fetcher, Cleaners, pyproject.toml, model benchmark
+- **Key pending decision:** None blocking — ready to implement remaining spike files
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -30,8 +31,10 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 ## Active Decisions
 
 - **Build new** (not fork Local Deep Research) — LDR patterns worth borrowing, not the code
-- **Language open** — Python for spike; decide after spike validates extraction quality
+- **Language: Python** — confirmed for MVP, uv as dependency manager
 - **Local-model-first** — Ollama 7-14B for extraction; frontier (Claude) optional
+- **Python codegen priority:** q3c30 > q25c14 > dsc16 (benchmark in docs/research/)
+- **Toolkit pattern** — each pipeline step independently callable, Protocol-based boundaries
 - **Repo name:** `web-research` — placeholder, rename when better name emerges
 - **session-handoff skill:** installed at user level (`~/.claude/skills/`) not per-repo
 <!-- /ref:active-decisions -->

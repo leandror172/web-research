@@ -13,10 +13,12 @@
 Goal: validate that a local 14B model can reliably extract structured, useful
 information from web pages. Single script, no agents, no search.
 
-- [ ] 1.1 — `spike/extract.py`: fetch URL → clean text (trafilatura) → extract via Ollama → save JSON
+- [x] 1.0 — Protocol definitions (Fetcher, Cleaner, Extractor, OutputWriter) + pyproject.toml
+- [x] 1.0a — Python codegen model benchmark (8 personas, priority: q3c30 > q25c14 > dsc16)
+- [ ] 1.1 — OllamaExtractor + JsonOutputWriter + `spike/extract.py` main script
 - [ ] 1.2 — `spike/prompts.py`: open extraction prompt + focus-directed prompt + JSON schema
-- [ ] 1.3 — Run against 5 test URLs with `qwen2.5-coder:14b`
-- [ ] 1.4 — Run same URLs with `qwen3:14b` and `qwen3:8b` for comparison
+- [ ] 1.3 — Run against 5 test URLs with `qwen3.5:9b` + `qwen2.5-coder:14b`
+- [ ] 1.4 — Run same URLs with additional models for comparison
 - [ ] 1.5 — Evaluate: accurate? useful? links correct? focus-directive works?
 - [ ] 1.6 — Write `spike/README.md` with findings and verdict
 
