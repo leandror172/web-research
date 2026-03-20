@@ -16,3 +16,5 @@ spike/output/*.json
 
 # uv
 .python-version
+/.claude/settings.local.json
+/.idea/*
