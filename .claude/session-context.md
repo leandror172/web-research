@@ -11,12 +11,12 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 1 — MVP Spike (extraction benchmark complete)
-- **Next:** Fix pipeline gaps (truncation, User-Agent, cleaner comparison), then test across more URLs
+- **Active phase:** Phase 1 — MVP Spike (pipeline working, benchmark complete, fixes applied)
+- **Next:** Write spike/README.md with findings + verdict; then Phase 2 (search integration) or pipeline improvements
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
-- **Completed:** Full spike pipeline (fetch→clean→extract→save), codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs)
+- **Completed:** Full spike pipeline, codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs), pipeline fixes (truncation, UA)
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
-- **Pipeline gaps:** content truncation, Wikipedia 403, link URL extraction inconsistency
+- **Known limitations:** Wikipedia 403 (needs real browser fetcher), link URL extraction model-dependent, truncation is naive (no chunking)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
