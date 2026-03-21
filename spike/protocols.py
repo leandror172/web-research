@@ -52,6 +52,7 @@ class ExtractionResult:
 
     data: dict
     model: str
+    prompt_type: str
     duration_seconds: float
 
 

@@ -16,7 +16,12 @@ class HttpxFetcher:
             url,
             timeout=self._timeout,
             follow_redirects=True,
-            headers={"User-Agent": "web-research-spike/0.1"},
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                ),
+            },
         )
         return FetchResult(
             url=url,

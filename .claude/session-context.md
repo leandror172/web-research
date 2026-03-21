@@ -11,11 +11,12 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 1 — MVP Spike
-- **Next:** Implement OllamaExtractor, JsonOutputWriter, prompts, main script (spike/extract.py)
+- **Active phase:** Phase 1 — MVP Spike (extraction benchmark complete)
+- **Next:** Fix pipeline gaps (truncation, User-Agent, cleaner comparison), then test across more URLs
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
-- **Completed:** Protocol definitions, Fetcher, Cleaners, pyproject.toml, model benchmark
-- **Key pending decision:** None blocking — ready to implement remaining spike files
+- **Completed:** Full spike pipeline (fetch→clean→extract→save), codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs)
+- **Key finding:** Extraction and codegen need different models — task-aware model selection validated
+- **Pipeline gaps:** content truncation, Wikipedia 403, link URL extraction inconsistency
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -33,7 +34,9 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 - **Build new** (not fork Local Deep Research) — LDR patterns worth borrowing, not the code
 - **Language: Python** — confirmed for MVP, uv as dependency manager
 - **Local-model-first** — Ollama 7-14B for extraction; frontier (Claude) optional
-- **Python codegen priority:** q3c30 > q25c14 > dsc16 (benchmark in docs/research/)
+- **Python codegen priority:** q3c30 > q25c14 > dsc16 (§ python-codegen-model-benchmark.md)
+- **Extraction priority:** qwen3:14b > qwen3:8b > q25c14 > dsc16 (§ extraction-model-benchmark.md) [ref:extraction-model-priority]
+- **Task-aware model selection** — different tasks need different models; Dispatcher should select per-task
 - **Toolkit pattern** — each pipeline step independently callable, Protocol-based boundaries
 - **Repo name:** `web-research` — placeholder, rename when better name emerges
 - **session-handoff skill:** installed at user level (`~/.claude/skills/`) not per-repo

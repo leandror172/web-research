@@ -9,6 +9,9 @@ dependencies = [
     "html2text>=2024.2",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["spike"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

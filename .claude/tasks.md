@@ -15,12 +15,17 @@ information from web pages. Single script, no agents, no search.
 
 - [x] 1.0 — Protocol definitions (Fetcher, Cleaner, Extractor, OutputWriter) + pyproject.toml
 - [x] 1.0a — Python codegen model benchmark (8 personas, priority: q3c30 > q25c14 > dsc16)
-- [ ] 1.1 — OllamaExtractor + JsonOutputWriter + `spike/extract.py` main script
-- [ ] 1.2 — `spike/prompts.py`: open extraction prompt + focus-directed prompt + JSON schema
-- [ ] 1.3 — Run against 5 test URLs with `qwen3.5:9b` + `qwen2.5-coder:14b`
-- [ ] 1.4 — Run same URLs with additional models for comparison
-- [ ] 1.5 — Evaluate: accurate? useful? links correct? focus-directive works?
-- [ ] 1.6 — Write `spike/README.md` with findings and verdict
+- [x] 1.1 — OllamaExtractor + JsonOutputWriter + `spike/extract.py` main script
+- [x] 1.2 — `spike/prompts.py`: open extraction prompt + focus-directed prompt + JSON schema
+- [x] 1.3 — Run against 5 test URLs with multiple models (7 models × 5 URLs × 2 tasks)
+- [x] 1.4 — Extraction model benchmark — priority: qwen3:14b > qwen3:8b > q25c14 > dsc16
+- [x] 1.5 — Fix pipeline gaps: content truncation (6K char cap), browser User-Agent
+- [x] 1.6 — Re-test: MCP now correctly extracts "Model Context Protocol" with truncation; swapped Wikipedia (403 — TLS fingerprinting) for Arch Wiki
+- [ ] 1.7 — Write `spike/README.md` with findings and verdict
+
+### Deferred
+
+- [ ] Split benchmark tables into separate files, reference via § (saves ~3K tokens on doc load)
 
 ## Phase 2: Search Integration (pending spike verdict)
 
