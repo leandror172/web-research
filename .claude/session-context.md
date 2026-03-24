@@ -11,12 +11,12 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 1 — MVP Spike (pipeline working, benchmark complete, fixes applied)
+- **Active phase:** Phase 1 — MVP Spike (pipeline working, chunking implemented, benchmarks complete)
 - **Next:** Write spike/README.md with findings + verdict; then Phase 2 (search integration) or pipeline improvements
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
-- **Completed:** Full spike pipeline, codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs), pipeline fixes (truncation, UA)
+- **Completed:** Full spike pipeline, codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs), pipeline fixes (truncation→chunking, UA), GitHub repo created
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
-- **Known limitations:** Wikipedia 403 (needs real browser fetcher), link URL extraction model-dependent, truncation is naive (no chunking)
+- **Known limitations:** Wikipedia 403 (needs real browser fetcher), link URL extraction model-dependent, dedup is exact-match only (fuzzy/semantic dedup deferred)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -38,6 +38,8 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 - **Extraction priority:** qwen3:14b > qwen3:8b > q25c14 > dsc16 (§ extraction-model-benchmark.md) [ref:extraction-model-priority]
 - **Task-aware model selection** — different tasks need different models; Dispatcher should select per-task
 - **Toolkit pattern** — each pipeline step independently callable, Protocol-based boundaries
+- **Chunking strategy:** chunk + merge with model-aware limits; Ollama API → JSON override → hardcoded fallback
+- **Data vs code boundary:** model config in JSON (not Python dicts) — agents edit data files safely
 - **Repo name:** `web-research` — placeholder, rename when better name emerges
 - **session-handoff skill:** installed at user level (`~/.claude/skills/`) not per-repo
 <!-- /ref:active-decisions -->
