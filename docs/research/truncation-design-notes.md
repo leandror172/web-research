@@ -71,3 +71,32 @@ Trafilatura already does content extraction (removes nav, footer, ads). So the i
 | Arch Wiki (Pacman) | ~139K | 43,027 | 6,000 | 14% |
 
 For 3 of 5 test URLs, truncation doesn't even trigger. The issue is specifically with long-form content (documentation, wiki articles, large markdown files).
+
+---
+
+## Decision Log
+
+### 2026-03-23 — Strategy chosen: Chunking + Merge with Model-Aware Limits
+
+**Chosen:** Chunking + merge as primary strategy, with model-aware chunk sizing.
+
+**Why chunking + merge:**
+- Local models mean N× calls cost time, not money — acceptable tradeoff
+- Extraction output is structured (title, summary, key facts) so merge is tractable
+- Fits the pluggable architecture — chunk strategy and merge logic are separate concerns
+- Sees 100% of content, which naive/smart truncation cannot achieve
+
+**Why model-aware limits:**
+- Orthogonal to chunking — determines chunk size based on actual model context window
+- Should be implemented regardless of truncation strategy
+
+**Deferred: Relevance-based selection**
+- Important for targeted queries (e.g., "find deployment instructions in this doc")
+- Will matter when the Conductor can express a focus directive per-task
+- Not needed for general extraction, which is the current use case
+- Revisit when Dispatcher gains task-level strategy selection
+
+**Not using LangChain/LlamaIndex:**
+- Chunking + merge is ~50 lines of Python; frameworks add abstraction overhead without proportional value
+- Project architecture is already opinionated (protocols, bounded contexts) — would conflict
+- Learning workbench benefits from seeing the mechanics, not hiding them behind framework abstractions

@@ -1,0 +1,16 @@
+{
+  "defaults": {
+    "context_tokens": 8000,
+    "prompt_reserve_tokens": 2000,
+    "chars_per_token": 4
+  },
+  "models": {
+    "qwen3:14b":    { "context_tokens": 32000 },
+    "qwen3:8b":     { "context_tokens": 32000 },
+    "qwen3.5:9b":   { "context_tokens": 32000 },
+    "gemma3:12b":   { "context_tokens": 128000 },
+    "gemma3:4b":    { "context_tokens": 128000 },
+    "phi4:14b":     { "context_tokens": 16000 },
+    "mistral:7b":   { "context_tokens": 32000 }
+  }
+}

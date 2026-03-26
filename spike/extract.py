@@ -1,13 +1,16 @@
-"""Main spike script: fetch → clean → extract → save."""
+"""Main spike script: fetch → clean → chunk → extract → merge → save."""
 
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
+from spike.chunker import chunk_text
 from spike.cleaners import get_cleaner
 from spike.extractor import OllamaExtractor
 from spike.fetcher import HttpxFetcher
+from spike.merger import merge_results
+from spike.models import max_extract_chars
 from spike.output import JsonOutputWriter
 from spike.protocols import ExtractionConfig
 
@@ -27,17 +30,21 @@ def run(
     print(f"Cleaning ({cleaner})...")
     content = get_cleaner(cleaner).clean(page.html)
 
-    MAX_CHARS = 6000
     text = content.text
-    if len(text) > MAX_CHARS:
-        print(f"Truncating {len(text)} → {MAX_CHARS} chars")
-        text = text[:MAX_CHARS]
+    max_chars = max_extract_chars(model)
+    chunks = chunk_text(text, max_chars)
+    print(f"Content: {len(text)} chars → {len(chunks)} chunk(s) @ {max_chars} max")
 
     config = ExtractionConfig(
         model=model, prompt_type=prompt_type, focus=focus,
     )
-    print(f"Extracting ({model})...")
-    result = OllamaExtractor().extract(text, config)
+    extractor = OllamaExtractor()
+    results = []
+    for i, chunk in enumerate(chunks):
+        print(f"Extracting chunk {i + 1}/{len(chunks)} ({len(chunk)} chars, {model})...")
+        results.append(extractor.extract(chunk, config))
+
+    result = merge_results(results, prompt_type) if len(results) > 1 else results[0]
 
     path = JsonOutputWriter(output_dir).save(url, content, result)
     print(f"Saved to {path}")
