@@ -22,9 +22,12 @@ No active work — spike is frozen. Next work happens in Phase 2 (search integra
 - Link URL extraction model-dependent
 - Merge takes name/summary from first chunk only
 
-## Deeper Memory
+## Deeper Memory → KNOWLEDGE.md
 
-- `KNOWLEDGE.md` — accumulated findings, model rankings, architecture decisions
-- `../../docs/research/extraction-model-benchmark.md` — full benchmark data
-- `../../docs/research/python-codegen-model-benchmark.md` — codegen benchmark data
-- `../README.md` — spike overview and usage
+- **Model Rankings** — extraction (4 models ranked) + codegen (3 personas ranked)
+- **Architecture Decisions** — Protocol boundaries, toolkit pattern, data vs code
+- **Pipeline Evolution** — v1→v2→v3, what changed and why
+- **Failure Modes** — Wikipedia 403, cold-start, empty-input hallucination, MoE overhead
+
+Also: `../../docs/research/extraction-model-benchmark.md` (full benchmark data),
+`../../docs/research/python-codegen-model-benchmark.md` (codegen data), `../README.md` (usage)
