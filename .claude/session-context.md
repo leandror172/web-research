@@ -11,10 +11,11 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 1 — MVP Spike (pipeline working, chunking implemented, benchmarks complete)
-- **Next:** Write spike/README.md with findings + verdict; then Phase 2 (search integration) or pipeline improvements
+- **Active phase:** Phase 2 — Search Integration (not yet started)
+- **Completed:** Phase 1 spike (pipeline, benchmarks, chunking, README) — merged to main 2026-03-26
+- **Next:** Phase 2 design + search provider selection
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
-- **Completed:** Full spike pipeline, codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs), pipeline fixes (truncation→chunking, UA), GitHub repo created
+- **Memory structure:** `.memories/` per folder (QUICK.md + KNOWLEDGE.md) — first instance in `spike/`
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
 - **Known limitations:** Wikipedia 403 (needs real browser fetcher), link URL extraction model-dependent, dedup is exact-match only (fuzzy/semantic dedup deferred)
 <!-- /ref:current-status -->
