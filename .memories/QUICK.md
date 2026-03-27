@@ -4,7 +4,8 @@
 
 ## Status
 
-Phase 1 complete (spike). Phase 2A starting (search integration).
+Phase 2A complete (2026-03-27). Search + extraction pipeline working in tools/web-research/.
+Phase 2B next — content guard, usable-result filtering, FirecrawlFetcher for JS sites.
 
 ## Repo Structure
 

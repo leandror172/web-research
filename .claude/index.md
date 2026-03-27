@@ -48,6 +48,9 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `spike/.memories/KNOWLEDGE.md` | Spike semantic memory — accumulated findings, rankings, architecture |
 | `engine/.memories/QUICK.md` | Engine working memory — placeholder, DDD architecture overview |
 | `engine/.memories/KNOWLEDGE.md` | Engine semantic memory — tool integration patterns, libs/ trigger |
+| `tools/web-research/.memories/QUICK.md` | Tool working memory — Phase 2A status, known gaps |
+| `tools/web-research/.memories/KNOWLEDGE.md` | Tool semantic memory — architecture, codegen patterns, Phase 2B gaps |
+| `tools/web-research/docs/capabilities.md` | Capability map — content types × fetch/clean/extract quality, tested configs |
 | `docs/research/extraction-model-benchmark.md` | Benchmark of 7 models for web extraction — model priority list |
 | `docs/research/memory-layer-design.md` | Multi-tier memory system design (QUICK-MEMORY → session → ref → user) |
 | `docs/research/memory-architecture-design.md` | Per-folder agent memory architecture — types, levels, knowledge base vs repo |
