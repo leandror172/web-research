@@ -11,13 +11,14 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 2 — Search Integration (not yet started)
-- **Completed:** Phase 1 spike (pipeline, benchmarks, chunking, README) — merged to main 2026-03-26
-- **Next:** Phase 2 design + search provider selection
+- **Active phase:** Phase 2B — Content guard, usable-result filtering, FirecrawlFetcher
+- **Completed:** Phase 2A (search integration) — tools/web-research/ package, CLI, Firecrawl search, end-to-end working
+- **Next:** Phase 2B gaps (see session-log.md "Next" section for full list)
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
-- **Memory structure:** `.memories/` per folder (QUICK.md + KNOWLEDGE.md) — first instance in `spike/`
+- **Memory structure:** Per-folder `.memories/` (QUICK.md + KNOWLEDGE.md) — at root, spike/, engine/, tools/web-research/
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
-- **Known limitations:** Wikipedia 403 (needs real browser fetcher), link URL extraction model-dependent, dedup is exact-match only (fuzzy/semantic dedup deferred)
+- **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
+- **Known gaps (Phase 2B):** no content guard, --top N tries first N not N usable, JS-rendered sites thin/empty, 404 not detected, search ranking surfaces YouTube/Reddit before docs
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->

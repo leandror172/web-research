@@ -1,5 +1,68 @@
 # Session Log
 
+**Current Session:** 2026-03-27 | **Phase:** 2A complete, 2B next
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`
+
+---
+
+## 2026-03-27 — Session 5: Memory Architecture + Phase 2A (Search Integration)
+
+### Context
+
+PR from feature/memory-architecture merged to main. Session recontextualized from that point, then tackled two parallel tracks: (1) memory architecture design and (2) Phase 2A implementation.
+
+### What Was Done
+
+**Memory architecture:**
+- Designed per-folder `.memories/` system (QUICK.md + KNOWLEDGE.md) modeled on human cognitive memory types (working, semantic, episodic, procedural, structural, prospective)
+- Created `.memories/` at repo root, `spike/.memories/`, `engine/.memories/`, `tools/web-research/.memories/`
+- QUICK.md has structural index into KNOWLEDGE.md sections (agents can decide whether to drill in)
+- Wrote `docs/research/memory-architecture-design.md` — full design doc (repo vs knowledge base, dream mode/consolidation, open questions)
+- Updated LLM repo QUICK-MEMORY.md + added overlay guidance task to tasks.md
+- Moved old `spike/QUICK-MEMORY.md` into `spike/.memories/QUICK.md`
+
+**Repo structure decisions:**
+- `engine/` — future orchestration layer (Conductor, Dispatcher, Auditor, Lens)
+- `tools/<name>/` — self-contained capabilities (own pyproject.toml, no shared imports)
+- Engine dispatches via MCP/CLI/HTTP — not Python imports between tools
+- `libs/` trigger defined: two+ tools duplicating non-trivial non-MCP logic
+
+**Phase 2A — search integration:**
+- Scaffolded `tools/web-research/` as proper Python package
+- Promoted spike extraction code into `web_research/extraction/` (updated imports)
+- Added `web_research/search/` — SearchEngine protocol + FirecrawlSearchEngine (CLI subprocess)
+- Wired CLI: `web-research extract <url>` + `web-research search <query> --top N`
+- Installed Firecrawl CLI and authenticated
+- Ran full end-to-end test: search "crawl4ai" → extract → JSON output working
+- Added `scripts/` — compare_cleaners.py, inspect_chunks.py, smoke_test.py
+- Added `tools/web-research/docs/capabilities.md` — living capability map
+
+**Ollama codegen (my-python-q25c14, 10 files):** 5 ACCEPTED, 4 IMPROVED, 1 REJECTED
+- REJECTED: chunker signature changed because callers weren't in context_files
+- Key lesson: always include caller files as context when promoting called code
+
+### Decisions Made
+
+- **Per-folder .memories/** — QUICK.md (working, ~30 lines, always injected) + KNOWLEDGE.md (semantic, read on demand)
+- **Structural indexing in QUICK:** "Deeper Memory → KNOWLEDGE.md" section lists what's inside so agents can decide whether to read it
+- **Episodic + procedural stay at repo level** — they don't have meaningful per-folder existence
+- **Tool isolation confirmed:** no shared Python imports; MCP bridge is integration layer
+- **Firecrawl for search (Phase 2A), SearXNG deferred** — Docker setup not blocking
+- **Firecrawl extraction available as optional Extractor** — not default, but possible
+- **capabilities.md** — living capability map by content type (not tasks, not architecture — operational evidence)
+- **Serialize Ollama generate_code calls** — concurrent calls cause cold-start contention
+
+### Next
+
+- [ ] **Phase 2B gap 1:** Content guard — skip URLs with <N chars after cleaning, try next result
+- [ ] **Phase 2B gap 2:** `--top N` should mean N usable results, not N attempts
+- [ ] **Phase 2B gap 3:** FirecrawlFetcher — optional Fetcher impl for JS-rendered sites
+- [ ] **Phase 2B gap 4:** 404 detection — check status_code before cleaning
+- [ ] **Phase 2B gap 5:** Search result filtering — domain blacklist or char-count threshold before extraction
+- [ ] Merge PR #2 (feature/memory-architecture) — all commits pushed, ready to review
+- [ ] Update LLM repo QUICK-MEMORY.md (Phase 2 now complete, not "next")
+- [ ] (LLM repo) Add overlay guidance for repo-file-as-context pattern in ollama-scaffolding
+
 ---
 
 ## 2026-03-24 — Session 4: Chunking + Merge Pipeline
@@ -115,31 +178,3 @@ then benchmarked Ollama personas for Python code generation.
 
 ---
 
-## 2026-03-18 — Session 1: Repo Setup
-
-### Context
-
-New repo created for the web research tool, designed in sessions 44/44b of the LLM
-infrastructure project. Full design docs in `/mnt/i/workspaces/llm/docs/research/`.
-
-### What Was Done
-
-- Initialized git repo at `/mnt/i/workspaces/web-research/`
-- Installed all three overlays: ref-indexing, ollama-scaffolding, session-tracking
-- Wrote project-specific CLAUDE.md, session-context.md, tasks.md
-- Copied research docs to docs/research/ (vision, spike plan, DDD patterns, agent naming)
-- Created spike/ directory skeleton per mvp-spike-plan.md
-- session-handoff skill installed at user level (~/.claude/skills/)
-
-### Decisions Made
-
-- session-tracking overlay created in LLM repo (PR #19) — first real use is this repo
-- Language: Python for spike, overall language TBD after spike validates extraction quality
-- Repo name `web-research` is a placeholder — rename when better name emerges
-- Research docs copied here (not symlinked) — new repo evolves them freely; LLM repo keeps originals as historical reference
-
-### Next
-
-- [ ] 1.1 — Implement `spike/extract.py`: fetch → clean → extract via Ollama → save JSON
-
----
