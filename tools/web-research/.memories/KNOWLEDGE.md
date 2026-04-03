@@ -2,42 +2,62 @@
 
 *Accumulated decisions and findings for this tool. Read on demand.*
 
-## Architecture Decisions
+## Protocol Boundaries (2026-03-27)
 
-### Protocol Boundaries
-Each pipeline step implements a Protocol (Fetcher, Cleaner, Extractor, OutputWriter, SearchEngine).
-Independently callable, implementations swappable via parameters. Same pattern as spike.
+Each pipeline step implements a Protocol: Fetcher, Cleaner, Extractor, OutputWriter,
+SearchEngine. Implementations are swappable via parameters — same pattern established
+in the spike, carried forward here.
 
-### Search Provider Strategy
-- Firecrawl CLI (subprocess) for now — authenticated, free tier (500 credits)
-- SearXNG planned as local-first replacement — Docker setup deferred
-- `FirecrawlSearchEngine` returns `list[SearchResult]` (url, title, description, position)
+**Rationale:** The spike proved that Protocol-based boundaries make the pipeline
+composable. Adding a new fetcher (e.g., FirecrawlFetcher for JS sites) means
+implementing one interface — nothing else changes.
 
-### Package Structure
-`web_research/extraction/` — promoted from spike (all imports updated)
-`web_research/search/` — new in Phase 2A
-`web_research/cli.py` — argparse, `extract` + `search` subcommands
-`scripts/` — diagnostic scripts (compare_cleaners, inspect_chunks, smoke_test)
-`docs/` — capabilities.md (living capability map)
+**Implication:** New capabilities are additive, not disruptive. The search provider
+can change from Firecrawl to SearXNG without touching extraction code.
 
-## Ollama Codegen Patterns (Phase 2A lessons)
+## Search Provider Strategy (2026-03-27)
 
-From generating 10 files with my-python-q25c14:
+Firecrawl search is the first implementation. It runs via CLI subprocess (`npx
+firecrawl`), returning JSON with url, title, description, and position fields.
+Firecrawl's free tier provides 500 credits for validation.
 
-| Pattern | Verdict | Fix |
+SearXNG (self-hosted via Docker) is the planned local-first replacement — aligns
+with the project's goal of running entirely on local infrastructure.
+
+**Rationale:** Get the pipeline working with an available search backend before
+investing in Docker infrastructure for SearXNG.
+
+## Ollama Codegen Patterns (Phase 2A lessons, 2026-03-27)
+
+This package was partially generated using local Ollama models (my-python-q25c14).
+Each generated file was evaluated with a verdict (ACCEPTED/IMPROVED/REJECTED):
+
+| Pattern | Verdict | Lesson |
 |---|---|---|
-| Simple promotion (update imports only) | ACCEPTED | None needed |
-| Promotion with caller not in context | REJECTED | Include callers as context_files — model changed API |
-| New file from spec | IMPROVED | Hallucinated non-existent functions; unsafe JSON parsing used |
-| File with many helpers | IMPROVED | Added unused imports; truncated on long files |
-| Concurrent Ollama calls (3 at once) | WARN | Serialize — concurrent calls cause cold-start contention |
+| Simple code promotion (update imports only) | ACCEPTED | Works well for mechanical changes |
+| Promotion with callers not in context | REJECTED | Model changed the API it couldn't see — always include callers as context_files |
+| New file from specification | IMPROVED | Hallucinated non-existent functions; used unsafe JSON parsing |
+| File with many helper functions | IMPROVED | Added unused imports; truncated output on long files |
 
-**Key rule:** When promoting code that's called by other code, include the callers as `context_files`.
+**Key rule:** When using a local model to promote/refactor code that's called by other
+code, include the calling files as `context_files` in the generate_code prompt.
 
-## Phase 2B Gaps (to address next)
+## Content Type Quality Matrix (2026-03-27)
 
-1. **Content guard** — skip URLs with <N chars after cleaning, try next result
+Detailed in `docs/capabilities.md`. Summary of what works and what doesn't:
+
+| Content Type | Fetch+Clean | Extract | Notes |
+|---|---|---|---|
+| Static HTML docs | Good | Good | Primary use case, reliable |
+| Wiki pages (non-Wikipedia) | Good | Good | Rich content, handles large pages via chunking |
+| Discourse forums | Good | Medium | trafilatura strips noise well |
+| JS-rendered (SPAs) | Poor | N/A | httpx gets thin content; needs browser-based fetcher |
+| Paywalled sites | Failed | N/A | No mitigation — filter by domain or char count |
+
+## Phase 2B Gaps (2026-03-27)
+
+1. **Content guard** — skip URLs with <N chars after cleaning, try next search result
 2. **`--top N` semantics** — should mean N usable results, not N attempts
-3. **FirecrawlFetcher** — use Firecrawl's scrape for JS-rendered sites (optional Fetcher impl)
-4. **404 detection** — check `status_code` before cleaning
-5. **Search result filtering** — domain blacklist or content-type hints to skip YouTube/Reddit
+3. **FirecrawlFetcher** — optional Fetcher implementation using Firecrawl's scrape API for JS-rendered sites
+4. **404 detection** — check HTTP status_code before cleaning
+5. **Search result filtering** — domain blacklist or content-type hints to avoid YouTube/Reddit/paywall URLs

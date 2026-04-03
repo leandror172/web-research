@@ -1,30 +1,42 @@
 # tools/web-research/ — Quick Memory
 
-*Working memory for this tool. Injected into agents. Keep under 30 lines.*
+*Working memory for this tool. Injected into agents operating here. Keep under 30 lines.*
 
 ## Status
 
-Phase 2A complete (2026-03-27). Search + extraction pipeline working.
-CLI: `extract <url>` and `search <query>` subcommands. Package: `web_research`.
+Phase 2A complete (2026-03-27). Search + extraction pipeline working end-to-end.
+CLI: `web-research extract <url>` and `web-research search <query>`.
 
-## Key Facts
+## Pipeline
 
-- **Search:** FirecrawlSearchEngine (CLI subprocess, JSON output)
-- **Fetch:** HttpxFetcher (browser UA) — JS-rendered sites get thin content
-- **Clean:** trafilatura (primary), html2text (fallback/comparison)
-- **Extract:** OllamaExtractor → qwen3:14b (default)
-- **Output:** JSON per URL to output/ dir
+```
+Search (Firecrawl) → Fetch (httpx) → Clean (trafilatura) → Chunk → Extract (Ollama) → JSON
+```
 
-## Known Gaps (see docs/capabilities.md)
+- **Search:** `FirecrawlSearchEngine` — calls Firecrawl CLI as subprocess, parses JSON output
+- **Fetch:** `HttpxFetcher` — browser User-Agent, but no JS rendering
+- **Clean:** trafilatura (primary), html2text (fallback for comparison)
+- **Extract:** `OllamaExtractor` → qwen3:14b default, structured JSON output
+- **Output:** one JSON file per URL in `output/` directory
 
-- No content guard — extracts even 0-char pages (wasteful)
-- JS-rendered sites (YouTube, Reddit, SPAs) — trafilatura gets near-nothing
-- `--top N` extracts first N results, not N usable results
+## Package Structure
+
+```
+web_research/
+  extraction/   # promoted from spike — fetcher, cleaner, chunker, extractor, merger
+  search/       # Firecrawl search engine, SearchEngine protocol
+  cli.py        # argparse entrypoint with extract + search subcommands
+```
+
+## Known Gaps (Phase 2B)
+
+- No content guard — extracts even empty pages (wastes model time)
+- JS-rendered sites (YouTube, Reddit, SPAs) return thin/empty content via httpx
+- `--top N` extracts first N results, not N *usable* results
 - 404 pages not detected before extraction
 
 ## Deeper Memory → KNOWLEDGE.md
 
-- **Architecture Decisions** — Protocol boundaries, search provider strategy
-- **Ollama Codegen Patterns** — verdicts from code generation, lessons learned
-
-Also: `docs/capabilities.md` (content type × quality matrix, tested configs, known gaps)
+- **Protocol Boundaries** — swappable components, same pattern as spike
+- **Ollama Codegen Patterns** — verdicts from generating this package with local models
+- **Phase 2B Gaps** — detailed gap list with planned mitigations

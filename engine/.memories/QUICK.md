@@ -8,21 +8,22 @@ Empty — placeholder created 2026-03-26. Engine code arrives in Phase 2B (orche
 
 ## Purpose
 
-Orchestration layer: Conductor, Dispatcher, Auditor, Lens (DDD bounded contexts).
-Dispatches to tools through defined interfaces (CLI, MCP, Protocol) — does NOT import
-tool code directly.
+Orchestration layer for the web-research pipeline. Four agents modeled as DDD bounded
+contexts, each owning a distinct responsibility:
+
+- **Conductor** — manages a research session lifecycle: what to research, when to stop, saving state
+- **Dispatcher** — knows how to call tools and compose pipelines; selects models per-task
+- **Auditor** — sufficiency gate: reviews accumulated results, decides if more research is needed
+- **Lens** — context proxy: summarizes/filters results so the Conductor's context stays clean
 
 ## Architecture Rules
 
-- Engine sits above tools — tools don't know about each other
-- Tools are black boxes to the engine — only contracts matter
-- Communication: MCP calls, CLI subprocess, or HTTP — not Python imports
-- No shared Python libraries between tools (MCP bridge is the integration layer)
+- Engine sits above tools — tools don't know about each other or the engine
+- Tools are black boxes — only their Protocol contracts matter
+- Communication: MCP calls, CLI subprocess, or HTTP — never Python imports across boundaries
 
 ## Deeper Memory → KNOWLEDGE.md
 
-- **DDD Bounded Contexts** — Conductor, Dispatcher, Auditor, Lens roles and boundaries
-- **Tool Integration Pattern** — MCP/CLI/HTTP dispatch, no shared imports
-- **When to Create libs/** — trigger conditions, examples that qualify vs don't
-
-Also: `../../spike/.memories/` (extraction findings), `../../docs/research/memory-architecture-design.md` (memory system)
+- **DDD Bounded Contexts** — agent roles, responsibilities, interaction patterns
+- **Tool Integration Pattern** — how engine dispatches to tools
+- **When to Create libs/** — trigger conditions for shared code extraction
