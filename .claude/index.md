@@ -24,6 +24,7 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | What | Where |
 |------|-------|
 | Project rules & constraints | `CLAUDE.md` (repo root) |
+| Project overview & usage | `README.md` (repo root) |
 
 ---
 
@@ -31,6 +32,7 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 
 | File | Purpose |
 |------|---------|
+| `README.md` | Project overview — architecture, usage, spike findings, status |
 | `docs/research/python-codegen-model-benchmark.md` | Benchmark of 8 Ollama personas for Python code gen — model priority list |
 | `spike/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
 | `spike/fetcher.py` | HttpxFetcher implementation (Fetcher protocol) |
