@@ -21,7 +21,7 @@ information from web pages. Single script, no agents, no search.
 - [x] 1.4 — Extraction model benchmark — priority: qwen3:14b > qwen3:8b > q25c14 > dsc16
 - [x] 1.5 — Fix pipeline gaps: content truncation (6K char cap), browser User-Agent
 - [x] 1.6 — Re-test: MCP now correctly extracts "Model Context Protocol" with truncation; swapped Wikipedia (403 — TLS fingerprinting) for Arch Wiki
-- [ ] 1.7 — Write `spike/README.md` with findings and verdict
+- [x] 1.7 — Write `spike/README.md` with findings and verdict
 
 ### Deferred
 
@@ -30,11 +30,25 @@ information from web pages. Single script, no agents, no search.
 - [ ] Migrate `spike/models.json` to TOML (`spike/models.toml`) when Python ≥3.11 is the minimum — use `tomllib` (stdlib), drop JSON loader
 - [ ] (LLM repo) Add overlay guidance: when generating code via Ollama, include existing repo files as few-shot context (protocols, implementations, data files). More effective than prose style instructions. Update in the ollama-scaffolding overlay source.
 
-## Phase 2: Search Integration (pending spike verdict)
+## Phase 2: Search Integration
 
-- [ ] 2.1 — SearXNG Docker setup and test
-- [ ] 2.2 — query → search → URL list → extract pipeline
-- [ ] 2.3 — Batch processing: list of URLs → parallel extraction → comparison output
+- [x] 2.0 — SearchEngine protocol + FirecrawlSearchEngine (CLI subprocess)
+- [x] 2.1 — Promote spike extraction code to tools/web-research/web_research/extraction/
+- [x] 2.2 — query → search → URL list → extract pipeline (CLI: `search <query> --top N`)
+- [x] 2.3 — Diagnostic scripts: compare_cleaners, inspect_chunks, smoke_test
+- [x] 2.4 — Capability map: tools/web-research/docs/capabilities.md
+
+### Phase 2B — Content Quality (next)
+
+- [ ] 2B.1 — Content guard: skip URLs with <N chars after cleaning, try next result
+- [ ] 2B.2 — `--top N` semantics: N usable results, not N attempts
+- [ ] 2B.3 — FirecrawlFetcher: optional Fetcher impl for JS-rendered sites (YouTube, Reddit, SPAs)
+- [ ] 2B.4 — 404 detection: check status_code before cleaning
+- [ ] 2B.5 — Search result filtering: domain blacklist or char-count threshold before extraction
+
+### Deferred
+
+- [ ] SearXNG Docker setup — local-first search provider to replace Firecrawl
 
 ## Phase 3: MVP Core (pending language decision)
 

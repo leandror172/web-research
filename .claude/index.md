@@ -42,9 +42,18 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `spike/extract.py` | Main spike script — CLI for fetch→clean→chunk→extract→merge→save |
 | `spike/benchmark.sh` | Single-URL extraction benchmark (7 models × 2 tasks) |
 | `spike/benchmark-full.sh` | Full extraction benchmark (6 models × 4 URLs × 2 tasks) |
-| `spike/QUICK-MEMORY.md` | Per-folder quick memory — recent spike findings |
+| `.memories/QUICK.md` | Repo-root working memory — current phase, structure, key rules |
+| `.memories/KNOWLEDGE.md` | Repo-root semantic memory — structural decisions, phase plan |
+| `spike/.memories/QUICK.md` | Spike working memory — current state, key facts, pointers |
+| `spike/.memories/KNOWLEDGE.md` | Spike semantic memory — accumulated findings, rankings, architecture |
+| `engine/.memories/QUICK.md` | Engine working memory — placeholder, DDD architecture overview |
+| `engine/.memories/KNOWLEDGE.md` | Engine semantic memory — tool integration patterns, libs/ trigger |
+| `tools/web-research/.memories/QUICK.md` | Tool working memory — Phase 2A status, known gaps |
+| `tools/web-research/.memories/KNOWLEDGE.md` | Tool semantic memory — architecture, codegen patterns, Phase 2B gaps |
+| `tools/web-research/docs/capabilities.md` | Capability map — content types × fetch/clean/extract quality, tested configs |
 | `docs/research/extraction-model-benchmark.md` | Benchmark of 7 models for web extraction — model priority list |
 | `docs/research/memory-layer-design.md` | Multi-tier memory system design (QUICK-MEMORY → session → ref → user) |
+| `docs/research/memory-architecture-design.md` | Per-folder agent memory architecture — types, levels, knowledge base vs repo |
 | `docs/research/truncation-design-notes.md` | Truncation problem analysis, strategy comparison, decision log |
 | `spike/models.json` | Model context-window overrides/fallback data file |
 | `spike/models.py` | Model context-window lookup — Ollama API + JSON override + fallback |
