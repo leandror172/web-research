@@ -1,0 +1,20 @@
+[project]
+name = "web-research"
+version = "0.2.0"
+description = "Local-model-powered web research tool — search, extract, accumulate knowledge"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.27",
+    "trafilatura>=2.0",
+    "html2text>=2024.2",
+]
+
+[project.scripts]
+web-research = "web_research.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["web_research"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

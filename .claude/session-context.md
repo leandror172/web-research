@@ -11,12 +11,14 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 1 — MVP Spike (pipeline working, chunking implemented, benchmarks complete)
-- **Next:** Write spike/README.md with findings + verdict; then Phase 2 (search integration) or pipeline improvements
+- **Active phase:** Phase 2B — Content guard, usable-result filtering, FirecrawlFetcher
+- **Completed:** Phase 2A (search integration) — tools/web-research/ package, CLI, Firecrawl search, end-to-end working
+- **Next:** Phase 2B gaps (see session-log.md "Next" section for full list)
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
-- **Completed:** Full spike pipeline, codegen benchmark (8 models), extraction benchmark (7 models × 5 URLs), pipeline fixes (truncation→chunking, UA), GitHub repo created
+- **Memory structure:** Per-folder `.memories/` (QUICK.md + KNOWLEDGE.md) — at root, spike/, engine/, tools/web-research/
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
-- **Known limitations:** Wikipedia 403 (needs real browser fetcher), link URL extraction model-dependent, dedup is exact-match only (fuzzy/semantic dedup deferred)
+- **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
+- **Known gaps (Phase 2B):** no content guard, --top N tries first N not N usable, JS-rendered sites thin/empty, 404 not detected, search ranking surfaces YouTube/Reddit before docs
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->

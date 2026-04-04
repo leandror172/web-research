@@ -1,0 +1,31 @@
+"""Fetcher implementation using httpx."""
+
+import httpx
+
+from web_research.extraction.protocols import FetchResult
+
+
+class HttpxFetcher:
+    """Fetches raw HTML from a URL using httpx."""
+
+    def __init__(self, timeout: float = 30.0):
+        self._timeout = timeout
+
+    def fetch(self, url: str) -> FetchResult:
+        response = httpx.get(
+            url,
+            timeout=self._timeout,
+            follow_redirects=True,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                ),
+            },
+        )
+        return FetchResult(
+            url=url,
+            html=response.text,
+            status_code=response.status_code,
+            content_type=response.headers.get("content-type"),
+        )
