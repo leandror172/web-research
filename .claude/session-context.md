@@ -11,14 +11,14 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 2B — Content guard, usable-result filtering, FirecrawlFetcher
-- **Completed:** Phase 2A (search integration) — tools/web-research/ package, CLI, Firecrawl search, end-to-end working
-- **Next:** Phase 2B gaps (see session-log.md "Next" section for full list)
+- **Active phase:** Phase 3 — Knowledge persistence (JSONL log, SQLite store, Auditor)
+- **Completed:** Phase 2B (content quality) — 404 detection, content guard, ThinContentError, --top N usable, domain blacklist, FirecrawlFetcher
+- **Branch:** `feature/phase-2b-content-quality` — committed, PR open
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
 - **Memory structure:** Per-folder `.memories/` (QUICK.md + KNOWLEDGE.md) — at root, spike/, engine/, tools/web-research/
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
 - **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
-- **Known gaps (Phase 2B):** no content guard, --top N tries first N not N usable, JS-rendered sites thin/empty, 404 not detected, search ranking surfaces YouTube/Reddit before docs
+- **Phase 3 entry point:** 3.1 CLI batch mode or 3.3 SQLite knowledge store (knowledge store is highest-value)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
