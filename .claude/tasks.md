@@ -38,13 +38,13 @@ information from web pages. Single script, no agents, no search.
 - [x] 2.3 — Diagnostic scripts: compare_cleaners, inspect_chunks, smoke_test
 - [x] 2.4 — Capability map: tools/web-research/docs/capabilities.md
 
-### Phase 2B — Content Quality (next)
+### Phase 2B — Content Quality (complete 2026-04-06)
 
-- [ ] 2B.1 — Content guard: skip URLs with <N chars after cleaning, try next result
-- [ ] 2B.2 — `--top N` semantics: N usable results, not N attempts
-- [ ] 2B.3 — FirecrawlFetcher: optional Fetcher impl for JS-rendered sites (YouTube, Reddit, SPAs)
-- [ ] 2B.4 — 404 detection: check status_code before cleaning
-- [ ] 2B.5 — Search result filtering: domain blacklist or char-count threshold before extraction
+- [x] 2B.1 — Content guard: skip URLs with <N chars after cleaning, try next result
+- [x] 2B.2 — `--top N` semantics: N usable results, not N attempts
+- [x] 2B.3 — FirecrawlFetcher: optional Fetcher impl for JS-rendered sites (YouTube, Reddit, SPAs)
+- [x] 2B.4 — 404 detection: check status_code before cleaning
+- [x] 2B.5 — Search result filtering: domain blacklist or char-count threshold before extraction
 
 ### Deferred
 
