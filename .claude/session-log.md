@@ -1,7 +1,45 @@
 # Session Log
 
-**Current Session:** 2026-04-06 | **Phase:** 2B complete, Phase 3 next
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`
+**Current Session:** 2026-04-07 | **Phase:** Phase 3 in progress — 3.3 done, MCP next
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`
+
+---
+
+## 2026-04-07 — Session 7: Phase 3.3 + Test Suite + Repo Housekeeping
+
+### Context
+
+Resumed from Phase 2B (PR merged to master). Goal was Phase 3 — started with 3.3 (knowledge store) as highest-value entry point, then discovered and resolved structural questions about the repo layout, then established a full test suite.
+
+### What Was Done
+
+- **Phase 3.3 — SQLite knowledge store:** `web_research/knowledge/store.py` + `__init__.py`. Supports `save`, `has_url`, `query(topic)`, `recent(n)`, context manager. Stdlib only (sqlite3).
+- **cli.py wired to store:** both subcommands now persist to `output/knowledge.db` by default; `search` skips already-known URLs (`has_url` gate); `--db` / `--no-db` flags added.
+- **Repo structure investigation:** confirmed `tools/<name>/` nesting is correct — polyglot monorepo intent, repo name is a placeholder (will rename). `tools/web-research/` nesting looks odd only because it shares the placeholder repo name.
+- **spike/ retired:** code fully promoted to `tools/web-research/` in Phase 2A. Deleted spike/ and orphaned root `pyproject.toml` / `uv.lock`. `.memories/` files retain historical context.
+- **Docs/tracking cleanup:** `index.md`, `README.md`, `session-context.md`, `tasks.md` updated; spike benchmark findings and TOML migration task restored after over-aggressive cleanup.
+- **pytest suite — 85 tests, 7 modules:**
+  - `tests/extraction/`: chunker, cleaners, merger, models, output
+  - `tests/search/`: filters
+  - `tests/knowledge/`: store (full 3.3 coverage)
+  - `conftest.py` with shared fixtures; autouse lru_cache clearing; monkeypatch over patch.object
+
+### Decisions Made
+
+- **MCP server insert as 3.5** — after 3.3, before Auditor (3.4); building after MCP exposure surfaces what Auditor interface needs. `has_url` / `query_knowledge` make it worth having.
+- **tools/ structure confirmed** — polyglot intent; not a bug; repo rename pending.
+- **spike/ deletion safe** — all code promoted, benchmarks preserved in docs.
+- **.memories/ retain history** — keep spike references in memory files even when filesystem is gone; they serve agents, not as filesystem pointers.
+- **TDD baseline established** — `uv run --group dev pytest`; new modules get matching test file; integration tests (fetcher, extractor, search engine) intentionally skipped.
+- **Codegen verdicts (my-python-q3c30, 7 calls):** 1 ACCEPTED, 6 IMPROVED — recurring defect: `model_copy()` (Pydantic method on plain dataclass), wrong cache clearing, wrong exception types in mocks.
+
+### Next
+
+- [ ] **3.5 — MCP server** — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge`
+- [ ] **3.4 — Auditor** — sufficiency check; build after MCP to validate interface
+- [ ] 3.1 — CLI batch mode (optional, not blocking)
+- [ ] 3.2 — JSONL event log (optional, feeds Auditor)
+- [ ] Deferred: SearXNG Docker setup
 
 ---
 
@@ -132,45 +170,6 @@ Resumed from Session 3 to address truncation (naive 6K char cap). Read `docs/res
 - [ ] Update spike/QUICK-MEMORY.md with chunking findings
 - [ ] (LLM repo) Add overlay guidance for repo-file-as-context pattern in ollama-scaffolding
 - [ ] Consider: test chunking with a truly massive document (1M+ chars) to exercise multi-chunk merge path
-
----
-
-## 2026-03-21 — Session 3: Extraction Spike + Extraction Model Benchmark
-
-### Context
-
-Resumed from Session 2 (codegen benchmark). Implemented remaining spike files, ran full extraction benchmark (7 models × 5 URLs × 2 tasks), discovered pipeline issues, fixed them.
-
-### What Was Done
-
-- Implemented full spike pipeline: `prompts.py`, `extractor.py`, `output.py`, `extract.py` (main CLI)
-- Used `my-python-q3c30` to generate implementations via Ollama, verdicted each (all IMPROVED — consistent defect patterns: inherits from Protocol, unused imports, async instead of sync)
-- Ran extraction benchmark: 7 models × 5 URLs (crawl4ai, huggingface, Wikipedia, htmx, MCP llms-full.txt) × 2 tasks (open + focused)
-- Discovered 3 pipeline issues: Wikipedia 403 (TLS fingerprinting), no content truncation (1MB sent to 8K-context models), cold-start timeouts on model switching
-- Fixed: content truncation (6K char cap), browser User-Agent
-- Re-tested: MCP now correctly extracts "Model Context Protocol" (was extracting random SEP fragments); swapped Wikipedia for Arch Wiki
-- Created `docs/research/extraction-model-benchmark.md` with full results and priority list
-- Created `spike/QUICK-MEMORY.md` — per-folder quick memory (Tier 0 of memory layer design)
-- Created `docs/research/memory-layer-design.md` — multi-tier memory architecture design
-- Saved user memories: memory layer architecture interest, Ollama for code generation feedback
-
-### Decisions Made
-
-- **Extraction model priority:** qwen3:14b > qwen3:8b > qwen2.5-coder:14b > dsc16 (different from codegen!)
-- **deepseek-r1:14b excluded** from extraction — hallucinated "PyTorch" from empty input
-- **qwen3:30b-a3b not worth it** for extraction — 2-3x slower, no quality gain over 14b
-- **Task-aware model selection validated** — different tasks need different models; Dispatcher should maintain separate priority lists
-- **Multi-model extraction** worth exploring — fastest model for quick pass, best for depth, merge results
-- **Wikipedia needs a real browser fetcher** (Crawl4AI/Firecrawl) — not fixable with UA alone
-- **QUICK-MEMORY.md per folder** adopted as Tier 0 of progressive memory injection
-
-### Next
-
-- [ ] 1.7 — Write `spike/README.md` with findings and verdict
-- [ ] Split benchmark tables into separate files (deferred — saves ~3K tokens)
-- [ ] html2text comparison on pages where trafilatura fails
-- [ ] Chunking strategy for pages >6K (currently just truncates)
-- [ ] Consider: model-selects-model for the Dispatcher (classifier picks best extractor per content type)
 
 ---
 

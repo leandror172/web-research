@@ -50,14 +50,18 @@ information from web pages. Single script, no agents, no search.
 
 - [ ] SearXNG Docker setup — local-first search provider to replace Firecrawl
 
-## Phase 3: MVP Core (pending language decision)
+## Phase 3: MVP Core
 
-- [ ] 3.1 — CLI wrapper (query / url / batch subcommands)
-- [ ] 3.2 — JSONL event log (audit trail, replay)
-- [ ] 3.3 — SQLite knowledge store (structured facts, basic querying)
-- [ ] 3.4 — Sufficiency check (Auditor) — LLM prompt + iteration logic
+- [ ] 3.1 — CLI wrapper (query / url / batch subcommands) — optional, not blocking
+- [ ] 3.2 — JSONL event log (audit trail, replay) — optional, feeds Auditor
+- [x] 3.3 — SQLite knowledge store (structured facts, basic querying) — complete 2026-04-07
+- [ ] 3.5 — MCP server — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge` ← **NEXT**
+- [ ] 3.4 — Sufficiency check (Auditor) — LLM prompt + iteration logic; build after MCP
+
+### Also completed this phase
+- [x] Pytest suite — 85 tests, 7 modules (`uv run --group dev pytest`)
 
 ## Phase 4: Claude Code Integration
 
-- [ ] 4.1 — MCP tools: `research_url`, `search_topic`, `query_knowledge`
-- [ ] 4.2 — Skill: `/research <url>` for high-level workflow
+- [ ] 4.1 — MCP skill: `/research <url>` for high-level workflow
+- [ ] 4.2 — Full agent loop (Conductor + Auditor iteration)

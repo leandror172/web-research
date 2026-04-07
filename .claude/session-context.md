@@ -11,14 +11,16 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 3 — Knowledge persistence (JSONL log, SQLite store, Auditor)
+- **Active phase:** Phase 3 — Knowledge persistence; 3.3 done, next: 3.5 MCP server
+- **Completed:** Phase 3.3 (SQLite knowledge store) — save/has_url/query/recent, wired into CLI
 - **Completed:** Phase 2B (content quality) — 404 detection, content guard, ThinContentError, --top N usable, domain blacklist, FirecrawlFetcher
-- **Branch:** `feature/phase-2b-content-quality` — committed, PR open
+- **Branch:** `master` — 4 commits ahead of origin, unpushed
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
 - **Memory structure:** Per-folder `.memories/` (QUICK.md + KNOWLEDGE.md) — at root, engine/, tools/web-research/
+- **Tests:** 85 pytest tests passing — `uv run --group dev pytest` from `tools/web-research/`
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
 - **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
-- **Phase 3 entry point:** 3.1 CLI batch mode or 3.3 SQLite knowledge store (knowledge store is highest-value)
+- **MCP plan:** 3.5 MCP server after 3.3 (memory saved); tools: research_url / search_topic / query_knowledge
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -42,7 +44,8 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 - **Toolkit pattern** — each pipeline step independently callable, Protocol-based boundaries
 - **Chunking strategy:** chunk + merge with model-aware limits; Ollama API → JSON override → hardcoded fallback
 - **Data vs code boundary:** model config in JSON (not Python dicts) — agents edit data files safely
-- **Repo name:** `web-research` — placeholder, rename when better name emerges
+- **Repo name:** `web-research` — placeholder, rename when better name emerges; `tools/<name>/` structure correct (polyglot intent)
+- **MCP server timing:** build as 3.5 after 3.3; `has_url`+`query_knowledge` are what make it worth having
 - **session-handoff skill:** installed at user level (`~/.claude/skills/`) not per-repo
 <!-- /ref:active-decisions -->
 

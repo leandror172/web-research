@@ -48,7 +48,11 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `tools/web-research/web_research/extraction/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
 | `tools/web-research/web_research/extraction/models.py` | Model context-window lookup — Ollama API + JSON override + fallback |
 | `tools/web-research/web_research/knowledge/store.py` | SQLite knowledge store — save/query/has_url across sessions |
-| `tools/web-research/pyproject.toml` | Tool package config — uv, dependencies, CLI entry point |
+| `tools/web-research/pyproject.toml` | Tool package config — uv, dependencies, CLI entry point, dev deps (pytest) |
+| `tools/web-research/tests/conftest.py` | Shared pytest fixtures — sample_clean, sample_extraction, tmp_db |
+| `tools/web-research/tests/extraction/` | Unit tests: chunker, cleaners, merger, models, output |
+| `tools/web-research/tests/search/` | Unit tests: filters |
+| `tools/web-research/tests/knowledge/` | Unit tests: store (Phase 3.3 coverage) |
 
 ---
 
