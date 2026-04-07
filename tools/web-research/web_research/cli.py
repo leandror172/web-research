@@ -14,6 +14,7 @@ from web_research.extraction.merger import merge_results
 from web_research.extraction.models import max_extract_chars
 from web_research.extraction.output import JsonOutputWriter
 from web_research.extraction.protocols import ExtractionConfig
+from web_research.knowledge.store import KnowledgeStore
 from web_research.search.firecrawl import FirecrawlSearchEngine
 from web_research.search.filters import is_blacklisted
 
@@ -39,6 +40,8 @@ def extract_single_url(
     output_dir: str = "output",
     min_chars: int = 200,
     fetcher: str = "httpx",
+    store: KnowledgeStore | None = None,
+    query: str | None = None,
 ) -> None:
     """Extract from a single URL using the full pipeline."""
     print(f"Fetching {url}...")
@@ -74,6 +77,9 @@ def extract_single_url(
     path = JsonOutputWriter(output_dir).save(url, content, result)
     print(f"Saved to {path}")
 
+    if store is not None:
+        store.save(url, content, result, query=query, focus=focus)
+
     print(f"\n--- Summary ---")
     print(f"Model: {result.model}")
     print(f"Duration: {result.duration_seconds:.1f}s")
@@ -93,6 +99,7 @@ def search_and_extract(
     min_chars: int = 200,
     skip_domains: frozenset[str] = frozenset(),
     fetcher: str = "httpx",
+    store: KnowledgeStore | None = None,
 ) -> None:
     """Search the web and extract from top results."""
     engine = FirecrawlSearchEngine()
@@ -126,6 +133,12 @@ def search_and_extract(
 
         print(f"{'='*60}")
         print(f"[{i + 1}/{len(filtered)}] {r.title}")
+
+        if store is not None and store.has_url(r.url):
+            print(f"Skipping (already in knowledge store): {r.url}")
+            usable_count += 1  # already-known counts as usable
+            continue
+
         try:
             extract_single_url(
                 url=r.url,
@@ -136,6 +149,8 @@ def search_and_extract(
                 output_dir=output_dir,
                 min_chars=min_chars,
                 fetcher=fetcher,
+                store=store,
+                query=query,
             )
             usable_count += 1
         except ThinContentError:
@@ -160,6 +175,8 @@ def main() -> None:
     extract_parser.add_argument("--focus")
     extract_parser.add_argument("--output-dir", default="output")
     extract_parser.add_argument("--fetcher", default="httpx", choices=["httpx", "firecrawl"])
+    extract_parser.add_argument("--db", default="output/knowledge.db", help="Knowledge store path")
+    extract_parser.add_argument("--no-db", action="store_true", help="Skip knowledge store")
 
     # Search command
     search_parser = subparsers.add_parser("search", help="Search and extract from results")
@@ -174,33 +191,45 @@ def main() -> None:
     search_parser.add_argument("--min-chars", type=int, default=200)
     search_parser.add_argument("--skip-domains", default="", help="Comma-separated extra domains to skip")
     search_parser.add_argument("--fetcher", default="httpx", choices=["httpx", "firecrawl"])
+    search_parser.add_argument("--db", default="output/knowledge.db", help="Knowledge store path")
+    search_parser.add_argument("--no-db", action="store_true", help="Skip knowledge store")
 
     args = parser.parse_args()
 
-    if args.command == "extract":
-        extract_single_url(
-            url=args.url,
-            cleaner=args.cleaner,
-            model=args.model,
-            prompt_type=args.prompt_type,
-            focus=args.focus,
-            output_dir=args.output_dir,
-            fetcher=args.fetcher,
-        )
-    elif args.command == "search":
-        search_and_extract(
-            query=args.query,
-            limit=args.limit,
-            top=args.top,
-            model=args.model,
-            prompt_type=args.prompt_type,
-            focus=args.focus,
-            cleaner=args.cleaner,
-            output_dir=args.output_dir,
-            min_chars=args.min_chars,
-            skip_domains=frozenset(d.strip() for d in args.skip_domains.split(",") if d.strip()),
-            fetcher=args.fetcher,
-        )
+    store: KnowledgeStore | None = None
+    if not args.no_db:
+        store = KnowledgeStore(args.db)
+
+    try:
+        if args.command == "extract":
+            extract_single_url(
+                url=args.url,
+                cleaner=args.cleaner,
+                model=args.model,
+                prompt_type=args.prompt_type,
+                focus=args.focus,
+                output_dir=args.output_dir,
+                fetcher=args.fetcher,
+                store=store,
+            )
+        elif args.command == "search":
+            search_and_extract(
+                query=args.query,
+                limit=args.limit,
+                top=args.top,
+                model=args.model,
+                prompt_type=args.prompt_type,
+                focus=args.focus,
+                cleaner=args.cleaner,
+                output_dir=args.output_dir,
+                min_chars=args.min_chars,
+                skip_domains=frozenset(d.strip() for d in args.skip_domains.split(",") if d.strip()),
+                fetcher=args.fetcher,
+                store=store,
+            )
+    finally:
+        if store is not None:
+            store.close()
 
 
 if __name__ == "__main__":
