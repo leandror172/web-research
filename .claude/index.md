@@ -32,35 +32,23 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Project overview — architecture, usage, spike findings, status |
+| `README.md` | Project overview — architecture, usage, status |
 | `docs/research/python-codegen-model-benchmark.md` | Benchmark of 8 Ollama personas for Python code gen — model priority list |
-| `spike/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
-| `spike/fetcher.py` | HttpxFetcher implementation (Fetcher protocol) |
-| `spike/cleaners.py` | TrafilaturaCleaner + Html2TextCleaner implementations (Cleaner protocol) |
-| `pyproject.toml` | Project config — uv, dependencies (httpx, trafilatura, html2text) |
-| `spike/prompts.py` | Extraction prompts (open + focused) and JSON schemas |
-| `spike/extractor.py` | OllamaExtractor implementation (Extractor protocol) |
-| `spike/output.py` | JsonOutputWriter implementation (OutputWriter protocol) |
-| `spike/extract.py` | Main spike script — CLI for fetch→clean→chunk→extract→merge→save |
-| `spike/benchmark.sh` | Single-URL extraction benchmark (7 models × 2 tasks) |
-| `spike/benchmark-full.sh` | Full extraction benchmark (6 models × 4 URLs × 2 tasks) |
-| `.memories/QUICK.md` | Repo-root working memory — current phase, structure, key rules |
-| `.memories/KNOWLEDGE.md` | Repo-root semantic memory — structural decisions, phase plan |
-| `spike/.memories/QUICK.md` | Spike working memory — current state, key facts, pointers |
-| `spike/.memories/KNOWLEDGE.md` | Spike semantic memory — accumulated findings, rankings, architecture |
-| `engine/.memories/QUICK.md` | Engine working memory — placeholder, DDD architecture overview |
-| `engine/.memories/KNOWLEDGE.md` | Engine semantic memory — tool integration patterns, libs/ trigger |
-| `tools/web-research/.memories/QUICK.md` | Tool working memory — Phase 2A status, known gaps |
-| `tools/web-research/.memories/KNOWLEDGE.md` | Tool semantic memory — architecture, codegen patterns, Phase 2B gaps |
-| `tools/web-research/docs/capabilities.md` | Capability map — content types × fetch/clean/extract quality, tested configs |
 | `docs/research/extraction-model-benchmark.md` | Benchmark of 7 models for web extraction — model priority list |
 | `docs/research/memory-layer-design.md` | Multi-tier memory system design (QUICK-MEMORY → session → ref → user) |
 | `docs/research/memory-architecture-design.md` | Per-folder agent memory architecture — types, levels, knowledge base vs repo |
 | `docs/research/truncation-design-notes.md` | Truncation problem analysis, strategy comparison, decision log |
-| `spike/models.json` | Model context-window overrides/fallback data file |
-| `spike/models.py` | Model context-window lookup — Ollama API + JSON override + fallback |
-| `spike/chunker.py` | Text chunking at paragraph/sentence boundaries with configurable overlap |
-| `spike/merger.py` | Merge N ExtractionResults — dedup lists, merge dicts, by prompt type |
+| `.memories/QUICK.md` | Repo-root working memory — current phase, structure, key rules |
+| `.memories/KNOWLEDGE.md` | Repo-root semantic memory — structural decisions, phase plan |
+| `engine/.memories/QUICK.md` | Engine working memory — placeholder, DDD architecture overview |
+| `engine/.memories/KNOWLEDGE.md` | Engine semantic memory — tool integration patterns, libs/ trigger |
+| `tools/web-research/.memories/QUICK.md` | Tool working memory — current status, pipeline overview |
+| `tools/web-research/.memories/KNOWLEDGE.md` | Tool semantic memory — architecture, codegen patterns, decisions |
+| `tools/web-research/docs/capabilities.md` | Capability map — content types × fetch/clean/extract quality, tested configs |
+| `tools/web-research/web_research/extraction/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
+| `tools/web-research/web_research/extraction/models.py` | Model context-window lookup — Ollama API + JSON override + fallback |
+| `tools/web-research/web_research/knowledge/store.py` | SQLite knowledge store — save/query/has_url across sessions |
+| `tools/web-research/pyproject.toml` | Tool package config — uv, dependencies, CLI entry point |
 
 ---
 

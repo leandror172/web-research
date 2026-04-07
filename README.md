@@ -11,8 +11,8 @@ time. Knowledge compounds across research sessions.
 
 Running extraction locally means no API costs, no rate limits, no data leaving the
 machine. The constraint is VRAM — 12 GB limits model size to ~14B parameters (dense)
-or ~30B with RAM offloading. The [spike](#spike--extraction-proof-of-concept) proved
-this is enough for reliable structured extraction from web pages.
+or ~30B with RAM offloading. Phase 1 benchmarks proved this is enough for reliable
+structured extraction from web pages.
 
 ## Architecture
 
@@ -26,13 +26,13 @@ one interface; nothing else changes.
 
 ```
 web-research/
-├── spike/               # Phase 1 — extraction proof-of-concept (frozen)
-├── engine/              # Phase 2B — orchestration layer (planned)
+├── engine/              # orchestration layer (planned — Conductor, Dispatcher, Auditor, Lens)
 ├── tools/
-│   └── web-research/    # Phase 2A — search + extraction pipeline
+│   └── web-research/    # search + extraction + knowledge pipeline
 │       └── web_research/
 │           ├── extraction/   # fetch, clean, chunk, extract, merge
 │           ├── search/       # search engine protocol + Firecrawl impl
+│           ├── knowledge/    # SQLite knowledge store (persists across sessions)
 │           └── cli.py        # CLI entry point
 └── docs/research/       # design decisions, benchmarks, architecture
 ```
@@ -91,33 +91,7 @@ Output is saved as JSON files in `output/`, one per URL.
 | `--limit` | `5` | Number of search results to fetch (search only) |
 | `--output-dir` | `output` | Directory for JSON output |
 
-## Spike — extraction proof-of-concept
-
-The `spike/` directory contains the Phase 1 proof-of-concept (frozen, not used by
-production code). It benchmarked 7 extraction models and 8 code generation personas
-across multiple URLs and task types.
-
-### Key findings
-
-**Extraction models** (ranked by quality on RTX 3060 12 GB):
-
-| Rank | Model | Why |
-|------|-------|-----|
-| 1 | qwen3:14b | Best quality — only model to identify top-level topics across chunked documents |
-| 2 | qwen3:8b | Best speed/quality ratio, smallest VRAM footprint |
-| 3 | qwen2.5-coder:14b | Reliable, no hallucination on empty input |
-| 4 | deepseek-coder-v2:16b | Fastest, but consistently shallower extraction |
-
-Three models were excluded: deepseek-r1:14b (hallucinated content from empty input —
-a safety risk for unsupervised pipelines), qwen3:30b-a3b (MoE routing overhead made
-it slower than dense 14B on 12 GB VRAM), and qwen3.5:9b (returned placeholder text
-on all tasks).
-
-**Critical insight:** Extraction and code generation need different models.
-Code-specialized models dominate codegen; general-purpose models dominate extraction.
-A single "best model" doesn't exist — it depends on the task.
-
-### What works and what doesn't
+## What works and what doesn't
 
 | Content type | Status | Notes |
 |---|---|---|
@@ -133,15 +107,9 @@ A single "best model" doesn't exist — it depends on the task.
 |-------|-------|--------|
 | 1 — Spike | Extraction pipeline + model benchmarks | Complete |
 | 2A — Search | Search integration + CLI | Complete |
-| 2B — Orchestrator | Content guard, result filtering, JS-rendered site support | Next |
-| 3+ — Agents | Full agent architecture, knowledge persistence, MCP server | Future |
-
-**Phase 2B gaps to address:**
-- Content guard — skip URLs with too little text after cleaning
-- `--top N` should mean N usable results, not N attempts
-- FirecrawlFetcher for JS-rendered sites
-- 404 detection before extraction
-- Search result filtering (domain blocklist)
+| 2B — Content quality | Content guard, domain filtering, JS-rendered site support | Complete |
+| 3 — Knowledge | SQLite store, JSONL log, Auditor, batch CLI | In progress |
+| 4 — MCP | Claude Code integration (`research_url`, `search_topic`, `query_knowledge`) | Planned |
 
 ## Design documents
 
