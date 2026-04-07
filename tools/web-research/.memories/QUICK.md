@@ -4,39 +4,34 @@
 
 ## Status
 
-Phase 2A complete (2026-03-27). Search + extraction pipeline working end-to-end.
+Phase 2B complete (2026-04-06). All five pipeline gaps closed.
 CLI: `web-research extract <url>` and `web-research search <query>`.
 
 ## Pipeline
 
 ```
-Search (Firecrawl) → Fetch (httpx) → Clean (trafilatura) → Chunk → Extract (Ollama) → JSON
+Search (Firecrawl) → [domain filter] → Fetch (httpx|firecrawl) → [404 check] → Clean → [content guard] → Chunk → Extract (Ollama) → JSON
 ```
 
-- **Search:** `FirecrawlSearchEngine` — calls Firecrawl CLI as subprocess, parses JSON output
-- **Fetch:** `HttpxFetcher` — browser User-Agent, but no JS rendering
-- **Clean:** trafilatura (primary), html2text (fallback for comparison)
+- **Search:** `FirecrawlSearchEngine` — Firecrawl CLI subprocess
+- **Domain filter:** `filters.py` — blacklist loaded from `search/domain_blacklist.json`
+- **Fetch:** `HttpxFetcher` (default) or `FirecrawlFetcher` for JS-rendered sites (`--fetcher firecrawl`)
+- **404 check:** raises `ValueError` before cleaning if `status_code >= 400`
+- **Content guard:** raises `ThinContentError` if cleaned text < `--min-chars` (default 200)
 - **Extract:** `OllamaExtractor` → qwen3:14b default, structured JSON output
-- **Output:** one JSON file per URL in `output/` directory
+- **`--top N`:** means N *usable* results — loop continues past thin/errored pages
 
 ## Package Structure
 
 ```
 web_research/
-  extraction/   # promoted from spike — fetcher, cleaner, chunker, extractor, merger
-  search/       # Firecrawl search engine, SearchEngine protocol
-  cli.py        # argparse entrypoint with extract + search subcommands
+  extraction/   # fetcher, firecrawl_fetcher, cleaner, chunker, extractor, merger
+  search/       # firecrawl.py, filters.py, domain_blacklist.json, protocols.py
+  cli.py        # argparse entrypoint — extract + search subcommands
 ```
-
-## Known Gaps (Phase 2B)
-
-- No content guard — extracts even empty pages (wastes model time)
-- JS-rendered sites (YouTube, Reddit, SPAs) return thin/empty content via httpx
-- `--top N` extracts first N results, not N *usable* results
-- 404 pages not detected before extraction
 
 ## Deeper Memory → KNOWLEDGE.md
 
 - **Protocol Boundaries** — swappable components, same pattern as spike
 - **Ollama Codegen Patterns** — verdicts from generating this package with local models
-- **Phase 2B Gaps** — detailed gap list with planned mitigations
+- **Phase 2B Decisions** — design rationale for each gap fix

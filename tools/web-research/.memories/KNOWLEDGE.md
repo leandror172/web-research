@@ -54,10 +54,16 @@ Detailed in `docs/capabilities.md`. Summary of what works and what doesn't:
 | JS-rendered (SPAs) | Poor | N/A | httpx gets thin content; needs browser-based fetcher |
 | Paywalled sites | Failed | N/A | No mitigation — filter by domain or char count |
 
-## Phase 2B Gaps (2026-03-27)
+## Phase 2B Decisions (2026-04-06)
 
-1. **Content guard** — skip URLs with <N chars after cleaning, try next search result
-2. **`--top N` semantics** — should mean N usable results, not N attempts
-3. **FirecrawlFetcher** — optional Fetcher implementation using Firecrawl's scrape API for JS-rendered sites
-4. **404 detection** — check HTTP status_code before cleaning
-5. **Search result filtering** — domain blacklist or content-type hints to avoid YouTube/Reddit/paywall URLs
+All five gaps closed. Key design choices:
+
+| Gap | Solution | Rationale |
+|---|---|---|
+| Content guard | `ThinContentError(ValueError)` raised in `extract_single_url` | Typed exception lets callers handle thin vs other errors differently |
+| `--top N` semantics | Loop with `usable_count`, iterate all results | Can't use slice — stopping condition depends on runtime outcomes |
+| FirecrawlFetcher | `firecrawl scrape <url> --format html --json` subprocess | Fits `Fetcher` Protocol; rendered HTML flows unchanged into cleaner |
+| 404 detection | `status_code >= 400` check before cleaning | httpx doesn't raise on 4xx; error page HTML would silently pollute extraction |
+| Domain blacklist | `search/domain_blacklist.json` + `filters.py` loader | Data/code boundary — agents edit JSON, not Python; `lru_cache` on load |
+
+`FirecrawlFetcher` JSON output has a `Scrape ID: ...` prefix before the JSON payload — use `stdout.find("{")` to locate the JSON start.

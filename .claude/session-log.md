@@ -1,7 +1,39 @@
 # Session Log
 
-**Current Session:** 2026-03-27 | **Phase:** 2A complete, 2B next
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`
+**Current Session:** 2026-04-06 | **Phase:** 2B complete, Phase 3 next
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`
+
+---
+
+## 2026-04-06 — Session 6: Phase 2B — Content Quality Guards
+
+### Context
+
+Resumed from Phase 2A. Five known gaps in the search+extract pipeline were on the backlog. All five were closed in this session.
+
+### What Was Done
+
+- **404 detection:** `raise ValueError(f"HTTP {status_code}")` before cleaning; search loop already had a try/except that catches and continues
+- **Content guard + `--top N` semantics:** `ThinContentError(ValueError)` raised in `extract_single_url` when cleaned text < `--min-chars` (default 200); `search_and_extract` loop now tracks `usable_count` and iterates all results until N usable ones are found
+- **Domain blacklist:** extracted to `web_research/search/domain_blacklist.json`; `filters.py` owns the loader (`lru_cache`, graceful fallback) and `is_blacklisted()` with parent-domain walking; `cli.py` imports from there — mirrors `models.py` pattern exactly
+- **FirecrawlFetcher:** new `web_research/extraction/firecrawl_fetcher.py` — runs `firecrawl scrape <url> --format html --json` as subprocess, strips `Scrape ID: ...` prefix with `stdout.find("{")`, returns `FetchResult` with rendered HTML; exposed via `--fetcher {httpx,firecrawl}` on both CLI subcommands
+- All five gaps tested (real HTTP calls + mocks); branch `feature/phase-2b-content-quality` committed and pushed
+
+### Decisions Made
+
+- **`ThinContentError` as typed exception** — lets callers distinguish thin content from other errors without return-value gymnastics
+- **Domain blacklist as JSON data file** — agents can edit without touching Python; co-located with `search/` module that owns it
+- **`FirecrawlFetcher` returns rendered `html`** (not markdown) — fits existing `Cleaner` chain unchanged; Firecrawl's `Scrape ID:` stdout prefix handled by `find("{")` not line-splitting
+- **Codegen verdict (my-python-q3c30, 3 calls):** 1 ACCEPTED, 2 IMPROVED (unused imports added — `from pathlib import Path`, `from typing import cast`)
+
+### Next
+
+- [ ] Phase 3.1 — CLI wrapper improvements (batch mode, structured output)
+- [ ] Phase 3.2 — JSONL event log (audit trail, replay)
+- [ ] Phase 3.3 — SQLite knowledge store — structured facts that persist and compound across sessions
+- [ ] Phase 3.4 — Sufficiency check (Auditor agent) — first DDD agent boundary
+- [ ] Deferred: SearXNG Docker setup (local-first search to replace Firecrawl credits)
+- [ ] Merge PR for `feature/phase-2b-content-quality`
 
 ---
 
@@ -139,42 +171,6 @@ Resumed from Session 2 (codegen benchmark). Implemented remaining spike files, r
 - [ ] html2text comparison on pages where trafilatura fails
 - [ ] Chunking strategy for pages >6K (currently just truncates)
 - [ ] Consider: model-selects-model for the Dispatcher (classifier picks best extractor per content type)
-
----
-
-## 2026-03-20 — Session 2: Python Codegen Model Benchmark
-
-### Context
-
-Resumed from Session 1 (repo setup). Goal was to start spike implementation, but first
-aligned on architecture decisions (pluggability, model selection, dependency management),
-then benchmarked Ollama personas for Python code generation.
-
-### What Was Done
-
-- Discussed and decided spike architecture: Protocol-based boundaries (Fetcher, Cleaner, Extractor, OutputWriter), toolkit pattern for agent composability
-- Wrote `spike/protocols.py` (dataclasses + Protocols), `spike/fetcher.py`, `spike/cleaners.py`
-- Set up `pyproject.toml` with uv (httpx, trafilatura, html2text)
-- Benchmarked 8 Ollama personas (3 runs each, 2 tasks) for Python code generation quality
-- Created 4 new Python personas: my-python-q3c30, my-python-q3-30a3b, my-python-dsc16, my-python-dsr14
-- Established model priority order: q3c30 > q25c14 > dsc16
-- Saved full benchmark results to `docs/research/python-codegen-model-benchmark.md`
-- Updated CLAUDE.md with Python code gen model priority section
-
-### Decisions Made
-
-- **Python confirmed** for MVP (was open from Session 1)
-- **uv** as dependency manager (pyproject.toml, not poetry)
-- **Protocol-based pluggability** — each pipeline step is independently callable with swappable implementations via string parameters (Level 1), composable by Dispatcher agent later (Level 2)
-- **Model priority for Python codegen:** q3c30 (best quality) > q25c14 (best VRAM-only) > dsc16 (alternative)
-- **Code-specialized models dominate** — general-purpose Qwen3.5 was worst performer despite being newest
-- **Ollama should be used for code generation** too, not just as product component (feedback saved to memory)
-
-### Next
-
-- [ ] 1.1 — Implement remaining spike files: OllamaExtractor, JsonOutputWriter, prompts, main script (use q3c30 to generate, verdict each)
-- [ ] Test spike against URLs in spike/urls.txt
-- [ ] Consider disabling thinking on qwen3:30b-a3b persona for code gen use
 
 ---
 
