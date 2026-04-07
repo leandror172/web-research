@@ -15,6 +15,15 @@ web-research = "web_research.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["web_research"]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.14",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
