@@ -91,6 +91,29 @@ Output is saved as JSON files in `output/`, one per URL.
 | `--limit` | `5` | Number of search results to fetch (search only) |
 | `--output-dir` | `output` | Directory for JSON output |
 
+## Model benchmarks
+
+Phase 1 benchmarked 7 extraction models and 8 code generation personas. Full results:
+`docs/research/extraction-model-benchmark.md` and `docs/research/python-codegen-model-benchmark.md`.
+
+**Extraction models** (ranked by quality on RTX 3060 12 GB):
+
+| Rank | Model | Why |
+|------|-------|-----|
+| 1 | qwen3:14b | Best quality — only model to identify top-level topics across chunked documents |
+| 2 | qwen3:8b | Best speed/quality ratio, smallest VRAM footprint |
+| 3 | qwen2.5-coder:14b | Reliable, no hallucination on empty input |
+| 4 | deepseek-coder-v2:16b | Fastest, but consistently shallower extraction |
+
+Three models were excluded: deepseek-r1:14b (hallucinated content from empty input —
+a safety risk for unsupervised pipelines), qwen3:30b-a3b (MoE routing overhead made
+it slower than dense 14B on 12 GB VRAM), and qwen3.5:9b (returned placeholder text
+on all tasks).
+
+**Critical insight:** Extraction and code generation need different models.
+Code-specialized models dominate codegen; general-purpose models dominate extraction.
+A single "best model" doesn't exist — it depends on the task.
+
 ## What works and what doesn't
 
 | Content type | Status | Notes |

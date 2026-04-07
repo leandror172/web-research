@@ -26,6 +26,7 @@ information from web pages. Single script, no agents, no search.
 ### Deferred
 
 - [ ] Split benchmark tables into separate files, reference via § (saves ~3K tokens on doc load)
+- [ ] Migrate `tools/web-research/web_research/extraction/models.json` to TOML when Python ≥3.11 is the minimum — use `tomllib` (stdlib), drop JSON loader
 - [ ] Relevance-based truncation — select document sections by focus directive before extraction. Needs Dispatcher task-level strategy selection. See § "Deferred: Relevance-based selection" in `docs/research/truncation-design-notes.md`
 - [ ] (LLM repo) Add overlay guidance: when generating code via Ollama, include existing repo files as few-shot context (protocols, implementations, data files). More effective than prose style instructions. Update in the ollama-scaffolding overlay source.
 
