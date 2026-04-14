@@ -11,16 +11,18 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 3 — Knowledge persistence; 3.3 done, next: 3.5 MCP server
+- **Active phase:** Phase 3 — Knowledge persistence; 3.5 done, next: 3.4 Auditor
+- **Completed:** Phase 3.5 (MCP server) — research_url/search_topic/query_knowledge, FastMCP, stdio transport, registered in web-research + llm repos
 - **Completed:** Phase 3.3 (SQLite knowledge store) — save/has_url/query/recent, wired into CLI
 - **Completed:** Phase 2B (content quality) — 404 detection, content guard, ThinContentError, --top N usable, domain blacklist, FirecrawlFetcher
-- **Branch:** `master` — 4 commits ahead of origin, unpushed
+- **Branch:** `phase-3.5-mcp-server` — PR open against master
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
 - **Memory structure:** Per-folder `.memories/` (QUICK.md + KNOWLEDGE.md) — at root, engine/, tools/web-research/
 - **Tests:** 85 pytest tests passing — `uv run --group dev pytest` from `tools/web-research/`
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
+- **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
 - **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
-- **MCP plan:** 3.5 MCP server after 3.3 (memory saved); tools: research_url / search_topic / query_knowledge
+- **MCP server:** live + smoke-tested; `query_knowledge` + `research_url` cache-hit path confirmed
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -38,14 +40,14 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 - **Build new** (not fork Local Deep Research) — LDR patterns worth borrowing, not the code
 - **Language: Python** — confirmed for MVP, uv as dependency manager
 - **Local-model-first** — Ollama 7-14B for extraction; frontier (Claude) optional
-- **Python codegen priority:** q3c30 > q25c14 > dsc16 (§ python-codegen-model-benchmark.md)
+- **Python codegen priority:** q3c30 > g3-12b > q25c14 > dsc16; always pass context_files for framework tasks (§ python-codegen-model-benchmark.md)
 - **Extraction priority:** qwen3:14b > qwen3:8b > q25c14 > dsc16 (§ extraction-model-benchmark.md) [ref:extraction-model-priority]
 - **Task-aware model selection** — different tasks need different models; Dispatcher should select per-task
 - **Toolkit pattern** — each pipeline step independently callable, Protocol-based boundaries
 - **Chunking strategy:** chunk + merge with model-aware limits; Ollama API → JSON override → hardcoded fallback
 - **Data vs code boundary:** model config in JSON (not Python dicts) — agents edit data files safely
 - **Repo name:** `web-research` — placeholder, rename when better name emerges; `tools/<name>/` structure correct (polyglot intent)
-- **MCP server timing:** build as 3.5 after 3.3; `has_url`+`query_knowledge` are what make it worth having
+- **MCP server:** built as 3.5, live + smoke-tested; Option B (re-query store after CLI call); `focus` auto-derives `prompt_type`
 - **session-handoff skill:** installed at user level (`~/.claude/skills/`) not per-repo
 <!-- /ref:active-decisions -->
 
