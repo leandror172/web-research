@@ -1,7 +1,42 @@
 # Session Log
 
-**Current Session:** 2026-04-07 | **Phase:** Phase 3 in progress — 3.3 done, MCP next
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`
+**Current Session:** 2026-04-13 | **Phase:** Phase 3 in progress — 3.5 done, Auditor next
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`
+
+---
+
+## 2026-04-13 — Session 8: Phase 3.5 — MCP Server + Model Benchmarking
+
+### Context
+
+Resumed from Session 7 (Phase 3.3 SQLite store done, 85 tests passing). Goal: Phase 3.5 MCP server, then housekeeping + model benchmarking.
+
+### What Was Done
+
+- **Phase 3.5 — MCP server:** `web_research/mcp/server.py` using FastMCP, three tools: `research_url`, `search_topic`, `query_knowledge`. Option B (re-query store after CLI call, no changes to cli.py). `focus` auto-derives `prompt_type`.
+- **`run-server.sh`:** bash entry point, `cd`s to project dir before `uv run python -m web_research.mcp.server`; stdio transport.
+- **`.mcp.json`:** registered at repo root and also added to `/home/leandror/workspaces/llm/.mcp.json` (LLM repo now has access too).
+- **`pyproject.toml`:** added `mcp[cli]>=1.0` dependency; `uv sync` confirmed clean install.
+- **`.gitignore`:** added `tools/web-research/output/` and `*.txt` (session handoff scratch files).
+- **CLAUDE.md codegen priority updated:** gemma3:12b (`my-python-g3-12b`) added at #2; context-files rule documented.
+- **Model benchmark (with context files):** `my-python-q3c30` → ACCEPTED; `my-python-g3-12b` → IMPROVED. Without context: both REJECTED. Context files lift both models by at least one tier.
+- **MCP smoke-tested live:** all three tools loaded in session, `query_knowledge` + `research_url` cache-hit path verified working.
+- **Branch hygiene:** committed on master by mistake → created `phase-3.5-mcp-server` branch, cherry-picked, reset master to `de717a0`.
+
+### Decisions Made
+
+- **Option B for MCP return values** — wrap CLI calls, re-query store after; no changes to existing `cli.py` functions (preserves 85 tests).
+- **`focus` auto-derives `prompt_type`** — MCP callers pass `focus` only; server derives `"focused"` vs `"open"` automatically.
+- **`my-python-g3-12b` at priority #2** — real contender with context files; q3c30 still edges it on cleanliness (no stray typing imports, no hallucinated model names).
+- **Context files rule codified** — always pass framework examples when calling `generate_code` for SDK-specific tasks.
+
+### Next
+
+- [ ] **3.4 — Auditor** — sufficiency check agent; plugs into MCP as `search_topic` consumer; build now that MCP interface is real
+- [ ] Merge PR `phase-3.5-mcp-server` → master
+- [ ] 3.1 — CLI batch mode (optional)
+- [ ] 3.2 — JSONL event log (optional, feeds Auditor)
+- [ ] Deferred: SearXNG Docker setup
 
 ---
 
@@ -132,44 +167,6 @@ PR from feature/memory-architecture merged to main. Session recontextualized fro
 - [ ] Merge PR #2 (feature/memory-architecture) — all commits pushed, ready to review
 - [ ] Update LLM repo QUICK-MEMORY.md (Phase 2 now complete, not "next")
 - [ ] (LLM repo) Add overlay guidance for repo-file-as-context pattern in ollama-scaffolding
-
----
-
-## 2026-03-24 — Session 4: Chunking + Merge Pipeline
-
-### Context
-
-Resumed from Session 3 to address truncation (naive 6K char cap). Read `docs/research/truncation-design-notes.md` from previous session, then designed and implemented chunking + merge strategy with model-aware context limits.
-
-### What Was Done
-
-- Reviewed and discussed 6 truncation strategies, chose **chunking + merge with model-aware limits**
-- Documented decision in `docs/research/truncation-design-notes.md` § "Decision Log"
-- Implemented `spike/models.py` — queries Ollama `/api/show` at runtime for context length, JSON override layer, hardcoded fallback
-- Implemented `spike/models.json` — override/fallback config (separate data from code)
-- Implemented `spike/chunker.py` — paragraph-boundary chunking with configurable overlap, sentence-level fallback
-- Implemented `spike/merger.py` — combines N ExtractionResults (open: union+dedup lists, merge dicts; focused: highest assessment wins)
-- Updated `spike/extract.py` — pipeline now: fetch → clean → chunk → extract per chunk → merge → save
-- Tested live: Arch Wiki (43K chars) now fits in 1 chunk (was truncated to 6K/14%)
-- Created GitHub repo (`leandror172/web-research`, public, SSH) and pushed all history
-- Used Ollama (`my-python-q3c30`) to generate boilerplate for models.py, chunker.py, merger.py — all verdicted IMPROVED with fixes applied
-
-### Decisions Made
-
-- **Chunking + merge** chosen over smart truncation, two-pass, or relevance-based (local models = N× calls cost time not money)
-- **Relevance-based truncation deferred** — needs Dispatcher task-level strategy selection
-- **Not using LangChain/LlamaIndex** — overhead > value for one backend + custom architecture
-- **Model context data: Ollama API first, JSON override second** — JSON caps override Ollama (intentional human decisions like "model degrades past 32K")
-- **JSON over TOML for now** — Python 3.10 lacks tomllib; deferred to TOML migration when ≥3.11
-- **Existing code as Ollama context** — feed repo files as few-shot examples to code generation (feedback saved to memory)
-- **Public repo** — user chose public visibility for web-research
-
-### Next
-
-- [ ] 1.7 — Write `spike/README.md` with findings and verdict
-- [ ] Update spike/QUICK-MEMORY.md with chunking findings
-- [ ] (LLM repo) Add overlay guidance for repo-file-as-context pattern in ollama-scaffolding
-- [ ] Consider: test chunking with a truly massive document (1M+ chars) to exercise multi-chunk merge path
 
 ---
 

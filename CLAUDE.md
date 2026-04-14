@@ -65,9 +65,12 @@ Key rules (detail in the reference file):
 
 When calling `generate_code` for Python, use these models in order (first available wins):
 
-1. `my-python-q3c30` — highest quality, deterministic (needs RAM offloading, use timeout=300)
-2. `my-python-q25c14` — best VRAM-only option, fast, consistent
-3. `my-python-dsc16` — solid alternative if above unavailable
+1. `my-python-q3c30` — highest quality overall; ACCEPTED with context files, IMPROVED without (needs RAM offloading, timeout=300)
+2. `my-python-g3-12b` — gemma3 12B; ACCEPTED-level with context files, weaker without; fast, no RAM offloading needed
+3. `my-python-q25c14` — VRAM-only fallback, fast, consistent
+4. `my-python-dsc16` — last resort if above unavailable
+
+**Context files rule:** Always pass relevant existing files as `context_files` — both models jump at least one tier when given examples. For framework-specific tasks (MCP, FastMCP, protocols), include a working file from the same framework as context.
 
 Benchmark data: `docs/research/python-codegen-model-benchmark.md`
 
