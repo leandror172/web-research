@@ -1,7 +1,75 @@
 # Session Log
 
-**Current Session:** 2026-04-13 | **Phase:** Phase 3 in progress — 3.5 done, Auditor next
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`
+**Current Session:** 2026-04-23 | **Phase:** Phase 3 in progress — 3.4 done, 3.6 Conductor wire-up planned
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`
+
+---
+
+## 2026-04-23 — Session 10: Phase 3.6 design — Conductor wire-up plan
+
+### Context
+
+Resumed on `phase-3.4-auditor` branch (Auditor core built but unwired). User asked to plan wiring the Auditor; explicitly wanted the plan to be runnable from a clean context. Design-discussion session — no code shipped, plan written.
+
+### What Was Done
+
+- **Entry-point analysis:** confirmed MCP is not the sole entry point — CLI `search`, MCP `search_topic`, and programmatic callers all route through `cli.py`'s `search_and_extract`. Auditor belongs in a shared layer above them (Conductor), not in the MCP adapter.
+- **Design decisions locked** (11 items, see plan): take `recommended_queries[0]` per iteration, default `max_iterations=3`, fail-open on Auditor error, break MCP return shape to include verdict, factory-built Auditor, two-layer interface (generator + wrapper), always-search on iteration 0, no event-log scaffolding yet.
+- **Parked ideas stashed:** confidence threshold + iteration-aware Auditor prompt — new doc `tools/web-research/docs/auditor-iteration-control-ideas.md` with `[ref:auditor-iteration-control-ideas]`, revisit criteria documented.
+- **Plan written:** `.claude/plan-phase-3.6-conductor-wireup.md` — 11 decisions + 10 implementation steps + file change list + do-not-do list.
+- **Tracking updates:** QUICK.md (parked-ideas section), index.md (new doc registered).
+
+### Decisions Made
+
+- **Conductor as new module** (`web_research/conductor.py`) — not a package; promote later if it grows.
+- **Two-layer interface:** `iterate()` generator for CLI progress + future event-log hooks; `research_topic()` wrapper for MCP and simple callers.
+- **MCP return shape breaking change accepted** — 3.5 just shipped, right moment; verdict-less MCP response would defeat the wire-up.
+- **Code style:** single-purpose methods; large methods compose smaller ones (user preference recorded in plan).
+- **Scope defense via do-not-do list** in the plan — explicitly excludes confidence threshold, prompt changes, event log, link-following, `research_url` audit.
+
+### Next
+
+- [ ] Execute Phase 3.6 in a clean context from `.claude/plan-phase-3.6-conductor-wireup.md`
+- [ ] Open PR for `phase-3.4-auditor` → master (independent of 3.6; still pending from session 9)
+- [ ] Pre-existing `cli.py` default-model change (`qwen3:14b` → `gemma3:12b`) still uncommitted — decide to commit or discard
+
+---
+
+## 2026-04-23 — Session 9: Phase 3.4 — Auditor (cascade) TDD build
+
+### Context
+
+Resumed after Phase 3.5 MCP merge. User wanted to design + build Auditor interactively, pausing after design discussion. Effort set to medium, TDD required, local-model-first codegen with context files.
+
+### What Was Done
+
+- **Design discussion:** settled on **cascade** — heuristic gate for "obviously insufficient" only (never "obviously sufficient", since content-less verdicts are unsafe). Model does all "sufficient" determinations. Heuristic computes structured signals that enrich the model's prompt.
+- **Format design:** YAML for the signals block (structured pre-computed context), prose/markdown for entries. Renderer abstraction makes signals format A/B-testable.
+- **Template as file:** `prompts/sufficiency.md` lives separate from code, tracked for independent iteration. Deliberate departure from `prompts.py` convention (extraction prompts are Python constants).
+- **Branch:** `phase-3.4-auditor` created off master, 2 commits.
+- **Built (TDD, all tests first):**
+  - `auditor/signals.py` — `AuditSignals` frozen dataclass + `HeuristicChecker` (12 tests)
+  - `auditor/renderers.py` — `SignalsRenderer` Protocol + `YAMLRenderer` + `ProseRenderer` (11 tests)
+  - `auditor/prompts/sufficiency.md` — template with `{query}/{signals}/{entries}` slots
+  - `auditor/model_checker.py` — `SufficiencyVerdict` + `ModelChecker` (Ollama JSON-schema structured output, 10 tests)
+  - `auditor/auditor.py` — cascade orchestrator (4 tests)
+- **Added pyyaml dependency.** 37 new tests; full suite 122 passing.
+
+### Decisions Made
+
+- **Heuristic gates insufficient only, never sufficient** — content-less "sufficient" verdicts are asymmetrically risky (false-sufficient stops research early). Heuristic's real role is enriching model context with pre-computed signals, not deciding sufficiency.
+- **Prompt template as `.md` file** (not Python constant) — user wants template iteration separate from code changes. Diffs cleanly, supports A/B variants.
+- **Brace escaping in template** — literal `{{ }}` around the JSON example block because `.format()` is used for slot-filling.
+- **Protocol compliance tests dropped as tautological** — static typing concern, not runtime; other tests already fail if `.render()` is missing.
+- **Handwritten > local-model for fixture architecture** — both q3c30 and g3-12b produced broken tests for the `test_model_checker.py` and `test_auditor.py` files due to interacting pytest-mock/fixture-scope/stub-state constraints. Local models win on repetitive boilerplate; they struggle on stateful-mock scaffolding.
+
+### Next
+
+- [ ] **Wire Auditor into MCP `search_topic`** — the build is done but not yet plugged in; natural follow-up so `search_topic` can iterate on verdicts.
+- [ ] Open PR for `phase-3.4-auditor` → master
+- [ ] A/B benchmark harness comparing YAMLRenderer vs ProseRenderer on real queries (research tool, post-merge)
+- [ ] Pre-existing `cli.py` default-model change (`qwen3:14b` → `gemma3:12b`) — still uncommitted on master, decide to commit or discard
+- [ ] 3.1 CLI batch mode, 3.2 JSONL event log (both optional)
 
 ---
 
@@ -75,98 +143,6 @@ Resumed from Phase 2B (PR merged to master). Goal was Phase 3 — started with 3
 - [ ] 3.1 — CLI batch mode (optional, not blocking)
 - [ ] 3.2 — JSONL event log (optional, feeds Auditor)
 - [ ] Deferred: SearXNG Docker setup
-
----
-
-## 2026-04-06 — Session 6: Phase 2B — Content Quality Guards
-
-### Context
-
-Resumed from Phase 2A. Five known gaps in the search+extract pipeline were on the backlog. All five were closed in this session.
-
-### What Was Done
-
-- **404 detection:** `raise ValueError(f"HTTP {status_code}")` before cleaning; search loop already had a try/except that catches and continues
-- **Content guard + `--top N` semantics:** `ThinContentError(ValueError)` raised in `extract_single_url` when cleaned text < `--min-chars` (default 200); `search_and_extract` loop now tracks `usable_count` and iterates all results until N usable ones are found
-- **Domain blacklist:** extracted to `web_research/search/domain_blacklist.json`; `filters.py` owns the loader (`lru_cache`, graceful fallback) and `is_blacklisted()` with parent-domain walking; `cli.py` imports from there — mirrors `models.py` pattern exactly
-- **FirecrawlFetcher:** new `web_research/extraction/firecrawl_fetcher.py` — runs `firecrawl scrape <url> --format html --json` as subprocess, strips `Scrape ID: ...` prefix with `stdout.find("{")`, returns `FetchResult` with rendered HTML; exposed via `--fetcher {httpx,firecrawl}` on both CLI subcommands
-- All five gaps tested (real HTTP calls + mocks); branch `feature/phase-2b-content-quality` committed and pushed
-
-### Decisions Made
-
-- **`ThinContentError` as typed exception** — lets callers distinguish thin content from other errors without return-value gymnastics
-- **Domain blacklist as JSON data file** — agents can edit without touching Python; co-located with `search/` module that owns it
-- **`FirecrawlFetcher` returns rendered `html`** (not markdown) — fits existing `Cleaner` chain unchanged; Firecrawl's `Scrape ID:` stdout prefix handled by `find("{")` not line-splitting
-- **Codegen verdict (my-python-q3c30, 3 calls):** 1 ACCEPTED, 2 IMPROVED (unused imports added — `from pathlib import Path`, `from typing import cast`)
-
-### Next
-
-- [ ] Phase 3.1 — CLI wrapper improvements (batch mode, structured output)
-- [ ] Phase 3.2 — JSONL event log (audit trail, replay)
-- [ ] Phase 3.3 — SQLite knowledge store — structured facts that persist and compound across sessions
-- [ ] Phase 3.4 — Sufficiency check (Auditor agent) — first DDD agent boundary
-- [ ] Deferred: SearXNG Docker setup (local-first search to replace Firecrawl credits)
-- [ ] Merge PR for `feature/phase-2b-content-quality`
-
----
-
-## 2026-03-27 — Session 5: Memory Architecture + Phase 2A (Search Integration)
-
-### Context
-
-PR from feature/memory-architecture merged to main. Session recontextualized from that point, then tackled two parallel tracks: (1) memory architecture design and (2) Phase 2A implementation.
-
-### What Was Done
-
-**Memory architecture:**
-- Designed per-folder `.memories/` system (QUICK.md + KNOWLEDGE.md) modeled on human cognitive memory types (working, semantic, episodic, procedural, structural, prospective)
-- Created `.memories/` at repo root, `spike/.memories/`, `engine/.memories/`, `tools/web-research/.memories/`
-- QUICK.md has structural index into KNOWLEDGE.md sections (agents can decide whether to drill in)
-- Wrote `docs/research/memory-architecture-design.md` — full design doc (repo vs knowledge base, dream mode/consolidation, open questions)
-- Updated LLM repo QUICK-MEMORY.md + added overlay guidance task to tasks.md
-- Moved old `spike/QUICK-MEMORY.md` into `spike/.memories/QUICK.md`
-
-**Repo structure decisions:**
-- `engine/` — future orchestration layer (Conductor, Dispatcher, Auditor, Lens)
-- `tools/<name>/` — self-contained capabilities (own pyproject.toml, no shared imports)
-- Engine dispatches via MCP/CLI/HTTP — not Python imports between tools
-- `libs/` trigger defined: two+ tools duplicating non-trivial non-MCP logic
-
-**Phase 2A — search integration:**
-- Scaffolded `tools/web-research/` as proper Python package
-- Promoted spike extraction code into `web_research/extraction/` (updated imports)
-- Added `web_research/search/` — SearchEngine protocol + FirecrawlSearchEngine (CLI subprocess)
-- Wired CLI: `web-research extract <url>` + `web-research search <query> --top N`
-- Installed Firecrawl CLI and authenticated
-- Ran full end-to-end test: search "crawl4ai" → extract → JSON output working
-- Added `scripts/` — compare_cleaners.py, inspect_chunks.py, smoke_test.py
-- Added `tools/web-research/docs/capabilities.md` — living capability map
-
-**Ollama codegen (my-python-q25c14, 10 files):** 5 ACCEPTED, 4 IMPROVED, 1 REJECTED
-- REJECTED: chunker signature changed because callers weren't in context_files
-- Key lesson: always include caller files as context when promoting called code
-
-### Decisions Made
-
-- **Per-folder .memories/** — QUICK.md (working, ~30 lines, always injected) + KNOWLEDGE.md (semantic, read on demand)
-- **Structural indexing in QUICK:** "Deeper Memory → KNOWLEDGE.md" section lists what's inside so agents can decide whether to read it
-- **Episodic + procedural stay at repo level** — they don't have meaningful per-folder existence
-- **Tool isolation confirmed:** no shared Python imports; MCP bridge is integration layer
-- **Firecrawl for search (Phase 2A), SearXNG deferred** — Docker setup not blocking
-- **Firecrawl extraction available as optional Extractor** — not default, but possible
-- **capabilities.md** — living capability map by content type (not tasks, not architecture — operational evidence)
-- **Serialize Ollama generate_code calls** — concurrent calls cause cold-start contention
-
-### Next
-
-- [ ] **Phase 2B gap 1:** Content guard — skip URLs with <N chars after cleaning, try next result
-- [ ] **Phase 2B gap 2:** `--top N` should mean N usable results, not N attempts
-- [ ] **Phase 2B gap 3:** FirecrawlFetcher — optional Fetcher impl for JS-rendered sites
-- [ ] **Phase 2B gap 4:** 404 detection — check status_code before cleaning
-- [ ] **Phase 2B gap 5:** Search result filtering — domain blacklist or char-count threshold before extraction
-- [ ] Merge PR #2 (feature/memory-architecture) — all commits pushed, ready to review
-- [ ] Update LLM repo QUICK-MEMORY.md (Phase 2 now complete, not "next")
-- [ ] (LLM repo) Add overlay guidance for repo-file-as-context pattern in ollama-scaffolding
 
 ---
 
