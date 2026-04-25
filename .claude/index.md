@@ -45,6 +45,7 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `tools/web-research/.memories/QUICK.md` | Tool working memory — current status, pipeline overview |
 | `tools/web-research/.memories/KNOWLEDGE.md` | Tool semantic memory — architecture, codegen patterns, decisions |
 | `tools/web-research/docs/capabilities.md` | Capability map — content types × fetch/clean/extract quality, tested configs |
+| `tools/web-research/docs/auditor-iteration-control-ideas.md` | `[ref:auditor-iteration-control-ideas]` — parked ideas for Auditor loop termination |
 | `tools/web-research/web_research/extraction/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
 | `tools/web-research/web_research/extraction/models.py` | Model context-window lookup — Ollama API + JSON override + fallback |
 | `tools/web-research/web_research/knowledge/store.py` | SQLite knowledge store — save/query/has_url across sessions |

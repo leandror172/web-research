@@ -35,3 +35,9 @@ web_research/
 - **Protocol Boundaries** — swappable components, same pattern as spike
 - **Ollama Codegen Patterns** — verdicts from generating this package with local models
 - **Phase 2B Decisions** — design rationale for each gap fix
+
+## Parked Ideas
+
+- **Auditor iteration control** — confidence threshold + iteration-aware prompt; revisit
+  after 3.6 ships with real-run data. [ref:auditor-iteration-control-ideas] →
+  `docs/auditor-iteration-control-ideas.md`
