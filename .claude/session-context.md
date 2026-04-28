@@ -11,9 +11,10 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 3 — 3.6 Conductor wire-up planned (executable from clean context via `.claude/plan-phase-3.6-conductor-wireup.md`)
+- **Active phase:** Phase 3 — 3.4 + 3.6 complete; 3.6 wiring in progress (not yet default)
+- **Completed:** Phase 3.6 (Conductor) — `conductor.py` (174 lines, dataclasses + iterate/research_topic + factory); `cli.py` wired; 245 tests; YAML renderer chosen
 - **Completed:** Phase 3.4 (Auditor core) — signals + heuristic + renderers (YAML/prose) + model checker + orchestrator + external prompt template; 37 new tests
-- **Planned (not started):** Phase 3.6 — extract `conductor.py` with audit-driven iteration loop; rewire CLI `search` and MCP `search_topic` through it; parked ideas (confidence threshold, iteration-aware prompt) documented at `[ref:auditor-iteration-control-ideas]`
+- **In progress:** Conductor end-to-end testing against live Ollama; not yet default CLI behavior
 - **Completed:** Phase 3.5 (MCP server) — research_url/search_topic/query_knowledge, FastMCP, stdio transport, registered in web-research + llm repos
 - **Completed:** Phase 3.3 (SQLite knowledge store) — save/has_url/query/recent, wired into CLI
 - **Completed:** Phase 2B (content quality) — 404 detection, content guard, ThinContentError, --top N usable, domain blacklist, FirecrawlFetcher

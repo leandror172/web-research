@@ -1,7 +1,38 @@
 # Session Log
 
-**Current Session:** 2026-04-23 | **Phase:** Phase 3 in progress — 3.4 done, 3.6 Conductor wire-up planned
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`
+**Current Session:** 2026-04-28 | **Phase:** Phase 3 in progress — 3.4 done, 3.6 Conductor wired
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`
+
+---
+
+## 2026-04-28 — Session 11: Phase 3.6 — Conductor execution
+
+### Context
+
+Resumed on tip of master (Phase 3.4 Auditor PR merged). User asked to review prior session reasoning, then commit + handoff. Session focused on executing Phase 3.6 from the plan written in Session 10.
+
+### What Was Done
+
+- **Built Conductor** (`web_research/conductor.py` — 174 lines): `IterationResult`, `ResearchResult` dataclasses; `iterate()` generator for CLI; `research_topic()` wrapper for MCP/programmatic; `build_default_auditor()` factory wired to qwen3:14b + YAML renderer
+- **Wired CLI** (`cli.py` — modified 102 lines): `search_and_extract()` now returns `list[str]` (freshly extracted URLs); `_run_search()` invokes Conductor for audit-driven loop
+- **Tests** (`test_conductor.py` — 245 lines): iteration mechanics, audit failure handling, early-exit on `sufficient=True`
+- **Updated CLAUDE.md** — registered Phase 3.6 details
+- **Commit 663127b** — Phase 3.6 foundation complete
+
+Conductor is not yet the default CLI behavior; still integrating and testing against live Ollama.
+
+### Decisions Made
+
+- **Executed per Phase 3.6 plan** from Session 10 — all 11 design decisions + 10 implementation steps followed
+- **YAML renderer chosen** (not prose) — simpler for model, matches CLAUDE.md example
+- **Fail-open on Auditor error** — if Auditor crashes, return what we have rather than blocking research
+
+### Next
+
+- [ ] **Test Conductor end-to-end** — verify cascade works with live queries against Ollama
+- [ ] **Set Conductor as default in CLI** — currently wired but not invoked by default `search` command
+- [ ] **A/B benchmark renderers** (optional research track, post-merge)
+- [ ] **Open PR for phase-3.6-conductor** (separate PR from 3.4; can merge independently)
 
 ---
 
@@ -103,44 +134,6 @@ Resumed from Session 7 (Phase 3.3 SQLite store done, 85 tests passing). Goal: Ph
 - [ ] **3.4 — Auditor** — sufficiency check agent; plugs into MCP as `search_topic` consumer; build now that MCP interface is real
 - [ ] Merge PR `phase-3.5-mcp-server` → master
 - [ ] 3.1 — CLI batch mode (optional)
-- [ ] 3.2 — JSONL event log (optional, feeds Auditor)
-- [ ] Deferred: SearXNG Docker setup
-
----
-
-## 2026-04-07 — Session 7: Phase 3.3 + Test Suite + Repo Housekeeping
-
-### Context
-
-Resumed from Phase 2B (PR merged to master). Goal was Phase 3 — started with 3.3 (knowledge store) as highest-value entry point, then discovered and resolved structural questions about the repo layout, then established a full test suite.
-
-### What Was Done
-
-- **Phase 3.3 — SQLite knowledge store:** `web_research/knowledge/store.py` + `__init__.py`. Supports `save`, `has_url`, `query(topic)`, `recent(n)`, context manager. Stdlib only (sqlite3).
-- **cli.py wired to store:** both subcommands now persist to `output/knowledge.db` by default; `search` skips already-known URLs (`has_url` gate); `--db` / `--no-db` flags added.
-- **Repo structure investigation:** confirmed `tools/<name>/` nesting is correct — polyglot monorepo intent, repo name is a placeholder (will rename). `tools/web-research/` nesting looks odd only because it shares the placeholder repo name.
-- **spike/ retired:** code fully promoted to `tools/web-research/` in Phase 2A. Deleted spike/ and orphaned root `pyproject.toml` / `uv.lock`. `.memories/` files retain historical context.
-- **Docs/tracking cleanup:** `index.md`, `README.md`, `session-context.md`, `tasks.md` updated; spike benchmark findings and TOML migration task restored after over-aggressive cleanup.
-- **pytest suite — 85 tests, 7 modules:**
-  - `tests/extraction/`: chunker, cleaners, merger, models, output
-  - `tests/search/`: filters
-  - `tests/knowledge/`: store (full 3.3 coverage)
-  - `conftest.py` with shared fixtures; autouse lru_cache clearing; monkeypatch over patch.object
-
-### Decisions Made
-
-- **MCP server insert as 3.5** — after 3.3, before Auditor (3.4); building after MCP exposure surfaces what Auditor interface needs. `has_url` / `query_knowledge` make it worth having.
-- **tools/ structure confirmed** — polyglot intent; not a bug; repo rename pending.
-- **spike/ deletion safe** — all code promoted, benchmarks preserved in docs.
-- **.memories/ retain history** — keep spike references in memory files even when filesystem is gone; they serve agents, not as filesystem pointers.
-- **TDD baseline established** — `uv run --group dev pytest`; new modules get matching test file; integration tests (fetcher, extractor, search engine) intentionally skipped.
-- **Codegen verdicts (my-python-q3c30, 7 calls):** 1 ACCEPTED, 6 IMPROVED — recurring defect: `model_copy()` (Pydantic method on plain dataclass), wrong cache clearing, wrong exception types in mocks.
-
-### Next
-
-- [ ] **3.5 — MCP server** — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge`
-- [ ] **3.4 — Auditor** — sufficiency check; build after MCP to validate interface
-- [ ] 3.1 — CLI batch mode (optional, not blocking)
 - [ ] 3.2 — JSONL event log (optional, feeds Auditor)
 - [ ] Deferred: SearXNG Docker setup
 
