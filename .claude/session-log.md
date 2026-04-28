@@ -27,12 +27,19 @@ Conductor is not yet the default CLI behavior; still integrating and testing aga
 - **YAML renderer chosen** (not prose) — simpler for model, matches CLAUDE.md example
 - **Fail-open on Auditor error** — if Auditor crashes, return what we have rather than blocking research
 
+### Incomplete
+
+**MPC `search_topic` tool NOT YET WIRED** — still returns raw results. Needs:
+- Import Conductor + build_default_auditor
+- Change return shape to `{query, results, iterations_run, verdict, audit_failed}`
+- Call `research_topic()` instead of single `search_and_extract()` pass
+
 ### Next
 
-- [ ] **Test Conductor end-to-end** — verify cascade works with live queries against Ollama
-- [ ] **Set Conductor as default in CLI** — currently wired but not invoked by default `search` command
+- [ ] **Wire Conductor into MPC `search_topic`** (Phase 3.6 incomplete)
+- [ ] **Test Conductor end-to-end** — verify cascade works with live queries
 - [ ] **A/B benchmark renderers** (optional research track, post-merge)
-- [ ] **Open PR for phase-3.6-conductor** (separate PR from 3.4; can merge independently)
+- [ ] **Open PR for phase-3.6-conductor** (after MPC wiring done)
 
 ---
 
