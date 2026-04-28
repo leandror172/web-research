@@ -65,19 +65,30 @@ def _search_and_extract_fn(query: str, **kwargs) -> list[str]:
 def _result_to_dict(result: ResearchResult) -> dict[str, Any]:
     """Serialize ResearchResult to MCP return dict.
 
-    Collects store entries by URL from every iteration (not by original query
-    alone) so follow-up iteration results are never missed by a LIKE mismatch.
+    Two-pass collection: (1) query store by original query (catches cached
+    hits from iteration 1); (2) query by URL for any new URLs from follow-up
+    iterations (which may not match the original query string). Deduped by URL.
     """
     verdict = dataclasses.asdict(result.final_verdict) if result.final_verdict else None
-    all_urls = [url for it in result.iterations for url in it.new_urls]
-    results = []
+
     seen: set[str] = set()
-    for url in all_urls:
+    results: list[dict[str, Any]] = []
+
+    # Pass 1: original query — catches cached entries from iteration 1
+    for row in _store.query(result.original_query, limit=20):
+        url = row.get("url", "")
+        if url not in seen:
+            seen.add(url)
+            results.append(row)
+
+    # Pass 2: new URLs from follow-up iterations not covered by pass 1
+    for url in (url for it in result.iterations for url in it.new_urls):
         if url not in seen:
             seen.add(url)
             rows = _store.query(url, limit=1)
             if rows:
                 results.append(rows[0])
+
     return {
         "query": result.original_query,
         "iterations_run": result.iterations_run,
