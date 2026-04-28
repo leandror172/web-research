@@ -1,7 +1,42 @@
 # Session Log
 
-**Current Session:** 2026-04-28 | **Phase:** Phase 3 in progress — 3.4 done, 3.6 Conductor wired
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`
+**Current Session:** 2026-04-28 | **Phase:** Phase 3 complete — 3.4 + 3.6 fully wired; PR #7 open
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`, `.claude/archive/session-log-2026-04-13-to-2026-04-13.md`
+
+---
+
+## 2026-04-28 — Session 12: Phase 3.6 — MCP wiring + A/B benchmark
+
+### Context
+
+Resumed on `phase-3.6-conductor` branch. Conductor was built (174 lines) but MCP `search_topic` still returned raw entries. Goal was to complete Phase 3.6 by wiring the Conductor into MCP, testing end-to-end, and opening the PR.
+
+### What Was Done
+
+- **Wired Conductor into MCP `search_topic`** (`mcp/server.py`): replaced single-round search with full `research_topic()` loop; new return shape `{query, results, iterations_run, verdict, audit_failed}`; two-pass results collection (LIKE on original query + per-URL for follow-up iterations)
+- **Fixed cached-results bug** (caught during live test): `_result_to_dict` was returning `results=[]` when all URLs were already cached (cached URLs don't appear in `new_urls`); fixed with two-pass store query
+- **Live end-to-end test**: `search "sqlite full text search python" --max-iterations 2` — heuristic passed to model, model returned `sufficient=False` with structured `missing_topics` + `recommended_queries`, loop stopped correctly on `new_urls=[]`
+- **Opened PR #7**: `phase-3.6-conductor` → master — 5 commits: Conductor core, CLI wiring, MCP wiring, cached-results fix, benchmark
+- **A/B benchmark** (`benchmarks/auditor_ab.py`, 194 lines): pins signals+entries per query, calls `ModelChecker.check()` directly per renderer with `temperature=0` + `seed=42`; run with `--queries` or `--top N`
+- **130 tests passing** throughout
+
+### Decisions Made
+
+- **Two-pass results collection in MCP** — LIKE on original query catches cached iteration-1 hits; per-URL lookup covers follow-up iteration results that wouldn't substring-match the original query
+- **Benchmark calls `ModelChecker.check()` directly** (not `Auditor.check()`) — bypasses store re-query so both renderers see identical pinned input; the only variable is the renderer
+- **`temperature=0` + `seed=42`** in Ollama payload for benchmark determinism
+
+### Findings (A/B benchmark, 2 queries)
+
+- Both renderers agree on `sufficient` verdict in both cases
+- Confidence diverges on sparse single-source data: YAML→`low`, Prose→`medium`
+- Hypothesis: YAML makes sparseness more legible as a discrete field vs embedded in prose
+
+### Next
+
+- [ ] **Merge PR #7** (all tests passing, live-verified)
+- [ ] **Re-run A/B benchmark with richer data** — run 3-4 more searches to get 4-5 entries per query, then `uv run python benchmarks/auditor_ab.py --top 5`
+- [ ] **Optional deferred:** Phase 3.1 (CLI batch mode), Phase 3.2 (JSONL event log), heuristic threshold tuning
 
 ---
 
@@ -108,41 +143,6 @@ Resumed after Phase 3.5 MCP merge. User wanted to design + build Auditor interac
 - [ ] A/B benchmark harness comparing YAMLRenderer vs ProseRenderer on real queries (research tool, post-merge)
 - [ ] Pre-existing `cli.py` default-model change (`qwen3:14b` → `gemma3:12b`) — still uncommitted on master, decide to commit or discard
 - [ ] 3.1 CLI batch mode, 3.2 JSONL event log (both optional)
-
----
-
-## 2026-04-13 — Session 8: Phase 3.5 — MCP Server + Model Benchmarking
-
-### Context
-
-Resumed from Session 7 (Phase 3.3 SQLite store done, 85 tests passing). Goal: Phase 3.5 MCP server, then housekeeping + model benchmarking.
-
-### What Was Done
-
-- **Phase 3.5 — MCP server:** `web_research/mcp/server.py` using FastMCP, three tools: `research_url`, `search_topic`, `query_knowledge`. Option B (re-query store after CLI call, no changes to cli.py). `focus` auto-derives `prompt_type`.
-- **`run-server.sh`:** bash entry point, `cd`s to project dir before `uv run python -m web_research.mcp.server`; stdio transport.
-- **`.mcp.json`:** registered at repo root and also added to `/home/leandror/workspaces/llm/.mcp.json` (LLM repo now has access too).
-- **`pyproject.toml`:** added `mcp[cli]>=1.0` dependency; `uv sync` confirmed clean install.
-- **`.gitignore`:** added `tools/web-research/output/` and `*.txt` (session handoff scratch files).
-- **CLAUDE.md codegen priority updated:** gemma3:12b (`my-python-g3-12b`) added at #2; context-files rule documented.
-- **Model benchmark (with context files):** `my-python-q3c30` → ACCEPTED; `my-python-g3-12b` → IMPROVED. Without context: both REJECTED. Context files lift both models by at least one tier.
-- **MCP smoke-tested live:** all three tools loaded in session, `query_knowledge` + `research_url` cache-hit path verified working.
-- **Branch hygiene:** committed on master by mistake → created `phase-3.5-mcp-server` branch, cherry-picked, reset master to `de717a0`.
-
-### Decisions Made
-
-- **Option B for MCP return values** — wrap CLI calls, re-query store after; no changes to existing `cli.py` functions (preserves 85 tests).
-- **`focus` auto-derives `prompt_type`** — MCP callers pass `focus` only; server derives `"focused"` vs `"open"` automatically.
-- **`my-python-g3-12b` at priority #2** — real contender with context files; q3c30 still edges it on cleanliness (no stray typing imports, no hallucinated model names).
-- **Context files rule codified** — always pass framework examples when calling `generate_code` for SDK-specific tasks.
-
-### Next
-
-- [ ] **3.4 — Auditor** — sufficiency check agent; plugs into MCP as `search_topic` consumer; build now that MCP interface is real
-- [ ] Merge PR `phase-3.5-mcp-server` → master
-- [ ] 3.1 — CLI batch mode (optional)
-- [ ] 3.2 — JSONL event log (optional, feeds Auditor)
-- [ ] Deferred: SearXNG Docker setup
 
 ---
 

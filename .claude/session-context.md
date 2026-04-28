@@ -11,22 +11,22 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active phase:** Phase 3 — 3.4 + 3.6 complete; 3.6 wiring in progress (not yet default)
-- **Partially done:** Phase 3.6 (Conductor) — `conductor.py` built (174 lines); CLI `search` command wired; MPC `search_topic` NOT YET UPDATED
-- **Completed:** Phase 3.4 (Auditor core) — signals + heuristic + renderers (YAML/prose) + model checker + orchestrator + external prompt template; 37 new tests
-- **Completed:** Phase 3.5 (MCP server) — research_url/search_topic/query_knowledge, FastMCP, stdio transport, registered in web-research + llm repos
+- **Active phase:** Phase 3 complete — 3.4 + 3.6 fully wired; **PR #7 open** (`phase-3.6-conductor` → master)
+- **Completed:** Phase 3.6 (Conductor) — `conductor.py` (174 lines); CLI + MCP wired; return shape `{query, results, iterations_run, verdict, audit_failed}`; live-tested; 130 tests passing
+- **Completed:** Phase 3.4 (Auditor core) — signals + heuristic + renderers (YAML/prose) + model checker + orchestrator + external prompt template; 37 tests
+- **Completed:** Phase 3.5 (MCP server) — research_url/search_topic/query_knowledge, FastMCP, stdio transport
 - **Completed:** Phase 3.3 (SQLite knowledge store) — save/has_url/query/recent, wired into CLI
 - **Completed:** Phase 2B (content quality) — 404 detection, content guard, ThinContentError, --top N usable, domain blacklist, FirecrawlFetcher
-- **Branch:** `phase-3.4-auditor` — 2 commits; PR not yet opened
+- **Branch:** `phase-3.6-conductor` — PR #7 open, all tests passing, ready to merge
 - **Language:** Python confirmed for MVP (uv + pyproject.toml)
 - **Memory structure:** Per-folder `.memories/` (QUICK.md + KNOWLEDGE.md) — at root, engine/, tools/web-research/
-- **Tests:** 122 pytest tests passing — `uv run --group dev pytest` from `tools/web-research/`
+- **Tests:** 130 pytest tests passing — `uv run --group dev pytest` from `tools/web-research/`
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
 - **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
 - **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
-- **MCP server:** live + smoke-tested; `query_knowledge` + `research_url` cache-hit path confirmed
-- **Auditor cascade:** heuristic gate → model checker; heuristic gates *insufficient only* (content-less "sufficient" verdicts too risky); YAML vs prose renderer A/B-ready
-- **Conductor design (3.6):** new `web_research/conductor.py`; `iterate()` generator + `research_topic()` wrapper; stop on `sufficient=True`, `max_iterations` (default 3), no recommendations, or no-new-URLs; fail-open on Auditor error; MCP return shape changes to `{query, results, iterations_run, verdict, audit_failed}`
+- **MCP server:** live + smoke-tested; `query_knowledge` + `research_url` cache-hit path confirmed; `search_topic` now runs Conductor loop
+- **Auditor cascade:** heuristic gate → model checker; heuristic gates *insufficient only*; YAML vs prose renderer A/B benchmarked (`benchmarks/auditor_ab.py`)
+- **A/B finding:** both renderers agree on `sufficient` verdict; YAML gives lower confidence on sparse single-source data than Prose — needs more store data to confirm
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
