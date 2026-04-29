@@ -26,7 +26,8 @@
 - **Capability map:** `tools/web-research/docs/capabilities.md` — content types × quality matrix, tested configs, known gaps
 - **MCP server:** live + smoke-tested; `query_knowledge` + `research_url` cache-hit path confirmed; `search_topic` now runs Conductor loop
 - **Auditor cascade:** heuristic gate → model checker; heuristic gates *insufficient only*; YAML vs prose renderer A/B benchmarked (`benchmarks/auditor_ab.py`)
-- **A/B finding:** both renderers agree on `sufficient` verdict; YAML gives lower confidence on sparse single-source data than Prose — needs more store data to confirm
+- **A/B finding (confirmed, 4 queries):** Prose is systematically more optimistic — verdict disagreement 1/4, confidence disagreement 2/4; `httpx` case shows Prose calling `sufficient/high` while YAML calls `insufficient/medium` on identical 3-entry corpus. YAML's conservatism is the right property for a research tool (over-stopping is the failure mode).
+- **Renderer decision: YAML** — production default; Prose available for throughput-optimized use cases
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -55,7 +56,7 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 - **session-handoff skill:** installed at user level (`~/.claude/skills/`) not per-repo
 - **Auditor: heuristic gates insufficient only** — heuristic can't judge content; asymmetric risk means "sufficient" is model-only. Heuristic's job is enriching model context with pre-computed signals.
 - **Auditor: prompt template is a `.md` file** (`auditor/prompts/sufficiency.md`) — iterate wording independent of code; use `.format()` so literal JSON braces must be `{{ }}` escaped.
-- **SignalsRenderer abstraction (YAML vs prose)** — makes input-format effect on model verdict A/B-testable.
+- **SignalsRenderer abstraction (YAML vs prose)** — A/B confirmed: YAML is production default. Prose available but systematically over-optimistic (narrative coherence masks coverage gaps).
 - **Local-model boundary for codegen** — repetitive boilerplate & straightforward impl: offload. Fixture architecture with stateful mocks: hand-write (both q3c30 and g3-12b produced broken `test_model_checker.py`/`test_auditor.py` on this type of task).
 <!-- /ref:active-decisions -->
 

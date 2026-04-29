@@ -20,7 +20,7 @@
 
 - **`benchmarks/auditor_ab.py`** (194 lines): pins signals+entries per query, calls `ModelChecker.check()` directly per renderer, `temperature=0` + `seed=42`
 - Run with: `uv run python benchmarks/auditor_ab.py --top 5` or `--queries "topic1" "topic2"`
-- **Finding:** both renderers agree on `sufficient`; YAML gives lower confidence on sparse/single-source data
+- **Finding (confirmed, 4 queries):** Prose is systematically more optimistic — verdict disagreement 1/4, confidence 2/4; canonical case: `httpx` (3 entries) → YAML `insufficient/medium`, Prose `sufficient/high`. **Decision: YAML is production default.** Prose available but narrative coherence masks coverage gaps.
 
 ### Key commits this session
 
@@ -36,8 +36,8 @@
 - [ ] **Merge PR #7** — all 130 tests passing, live-verified, ready
 
 ### Short-term (post-merge)
-- [ ] **Re-run A/B benchmark with richer data** — run 3-4 more searches to get 4-5 entries/query, then `uv run python benchmarks/auditor_ab.py --top 5`
-- [ ] **Confirm A/B finding** — does YAML reliably give lower confidence on sparse data, or was it noise?
+- [x] ~~Re-run A/B benchmark with richer data~~ — done (Session 13, 4 queries, confirmed)
+- [x] ~~Confirm A/B finding~~ — YAML conservatism confirmed; decision made: YAML is production renderer
 
 ### Optional (deferred)
 - [ ] Phase 3.1 — CLI batch mode

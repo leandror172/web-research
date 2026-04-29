@@ -40,6 +40,14 @@
 |------|---------|---------|
 | `mvp-spike-plan.md` | `mvp-spike-plan` | Concrete plan for extraction spike: script design, prompts, test URLs, success criteria |
 
+## Benchmarks
+
+| File | Ref Key | Purpose |
+|------|---------|---------|
+| `python-codegen-model-benchmark.md` | — | Model ranking for Python codegen: q3c30 > g3-12b > q25c14 > dsc16; context files effect |
+| `extraction-model-benchmark.md` | `extraction-model-priority` | Model ranking for extraction: qwen3:14b > qwen3:8b > q25c14 > dsc16 |
+| `auditor-renderer-ab-benchmark.md` | — | YAML vs Prose renderer A/B: YAML is production default; Prose over-reads breadth-first coverage as sufficient |
+
 ## Ref Key Conventions
 
 - `quick-memory-*` — concise entry-point summaries (one per topic)
