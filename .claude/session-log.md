@@ -1,7 +1,126 @@
 # Session Log
 
-**Current Session:** 2026-04-23 | **Phase:** Phase 3 in progress — 3.4 done, 3.6 Conductor wire-up planned
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`
+**Current Session:** 2026-04-29 | **Phase:** Phase 3 complete — A/B benchmark confirmed; YAML renderer decision made
+
+---
+
+## 2026-04-29 — Session 13: A/B benchmark confirmation + renderer decision
+
+### Context
+
+Resumed on `phase-3.6-conductor`. PR #7 open (user handling merge). Previous session's A/B benchmark ran on only 2 queries and was inconclusive. Advisor (Opus) from the prior session flagged: verify `seed=42` determinism before trusting results.
+
+### What Was Done
+
+**Seed determinism check (Opus advisor concern)**
+- `seed=42` + `temperature=0` stabilises binary verdict and confidence tier — both match across two runs
+- Free-text fields (reasoning, missing_topics, rec_queries) vary — non-deterministic
+- Implication: verdict/confidence comparisons in the A/B are reliable; text field comparisons are not
+
+**A/B benchmark re-run (4 queries, richer data)**
+- Populated store with 4 new searches (`qwen3:8b` for speed); landed 3 entries each for `httpx python async http client` and `python dataclasses guide`
+- Ran `uv run python benchmarks/auditor_ab.py --top 5` — 4 queries evaluated (1 skipped by heuristic gate)
+
+### Findings
+
+| Query | Entries | YAML | Prose | Verdict agree? |
+|---|---|---|---|---|
+| httpx python async http client | 3 | False/medium | True/high | ✗ |
+| python dataclasses guide | 3 | False/medium | False/medium | ✓ |
+| sqlite full text search python | 2 | False/medium | False/medium | ✓ |
+| proxify.ai (1 source) | 2 | False/low | False/medium | ✓ |
+
+- Verdict agreement: 3/4 — Confidence agreement: 2/4
+- **Pattern:** Prose is systematically more optimistic. Narrative coherence masks coverage gaps — the `httpx` case is canonical: 3 entries covering httpx breadth-first reads as "comprehensive" in prose but YAML exposes each feature is lightly covered.
+- **YAML's conservatism is the right property** — for a research tool, over-stopping is the failure mode; the Conductor should run more iterations, not fewer.
+
+### Decision
+
+**YAML renderer is the production default.** Already wired into `build_default_auditor()` in `conductor.py`. Prose stays available via `ProseRenderer()` for throughput-optimised use cases (e.g. shallow scans where a quick answer beats depth).
+
+### Next
+
+- [ ] Phase 3.1 — CLI batch mode (deferred)
+- [ ] Phase 3.2 — JSONL event log (deferred)
+- [ ] Tune heuristic thresholds after more live testing
+
+---
+
+## 2026-04-28 — Session 12: Phase 3.6 — MCP wiring + A/B benchmark
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`, `.claude/archive/session-log-2026-04-13-to-2026-04-13.md`
+
+---
+
+## 2026-04-28 — Session 12: Phase 3.6 — MCP wiring + A/B benchmark
+
+### Context
+
+Resumed on `phase-3.6-conductor` branch. Conductor was built (174 lines) but MCP `search_topic` still returned raw entries. Goal was to complete Phase 3.6 by wiring the Conductor into MCP, testing end-to-end, and opening the PR.
+
+### What Was Done
+
+- **Wired Conductor into MCP `search_topic`** (`mcp/server.py`): replaced single-round search with full `research_topic()` loop; new return shape `{query, results, iterations_run, verdict, audit_failed}`; two-pass results collection (LIKE on original query + per-URL for follow-up iterations)
+- **Fixed cached-results bug** (caught during live test): `_result_to_dict` was returning `results=[]` when all URLs were already cached (cached URLs don't appear in `new_urls`); fixed with two-pass store query
+- **Live end-to-end test**: `search "sqlite full text search python" --max-iterations 2` — heuristic passed to model, model returned `sufficient=False` with structured `missing_topics` + `recommended_queries`, loop stopped correctly on `new_urls=[]`
+- **Opened PR #7**: `phase-3.6-conductor` → master — 5 commits: Conductor core, CLI wiring, MCP wiring, cached-results fix, benchmark
+- **A/B benchmark** (`benchmarks/auditor_ab.py`, 194 lines): pins signals+entries per query, calls `ModelChecker.check()` directly per renderer with `temperature=0` + `seed=42`; run with `--queries` or `--top N`
+- **130 tests passing** throughout
+
+### Decisions Made
+
+- **Two-pass results collection in MCP** — LIKE on original query catches cached iteration-1 hits; per-URL lookup covers follow-up iteration results that wouldn't substring-match the original query
+- **Benchmark calls `ModelChecker.check()` directly** (not `Auditor.check()`) — bypasses store re-query so both renderers see identical pinned input; the only variable is the renderer
+- **`temperature=0` + `seed=42`** in Ollama payload for benchmark determinism
+
+### Findings (A/B benchmark, 2 queries)
+
+- Both renderers agree on `sufficient` verdict in both cases
+- Confidence diverges on sparse single-source data: YAML→`low`, Prose→`medium`
+- Hypothesis: YAML makes sparseness more legible as a discrete field vs embedded in prose
+
+### Next
+
+- [ ] **Merge PR #7** (all tests passing, live-verified)
+- [ ] **Re-run A/B benchmark with richer data** — run 3-4 more searches to get 4-5 entries per query, then `uv run python benchmarks/auditor_ab.py --top 5`
+- [ ] **Optional deferred:** Phase 3.1 (CLI batch mode), Phase 3.2 (JSONL event log), heuristic threshold tuning
+
+---
+
+## 2026-04-28 — Session 11: Phase 3.6 — Conductor execution
+
+### Context
+
+Resumed on tip of master (Phase 3.4 Auditor PR merged). User asked to review prior session reasoning, then commit + handoff. Session focused on executing Phase 3.6 from the plan written in Session 10.
+
+### What Was Done
+
+- **Built Conductor** (`web_research/conductor.py` — 174 lines): `IterationResult`, `ResearchResult` dataclasses; `iterate()` generator for CLI; `research_topic()` wrapper for MCP/programmatic; `build_default_auditor()` factory wired to qwen3:14b + YAML renderer
+- **Wired CLI** (`cli.py` — modified 102 lines): `search_and_extract()` now returns `list[str]` (freshly extracted URLs); `_run_search()` invokes Conductor for audit-driven loop
+- **Tests** (`test_conductor.py` — 245 lines): iteration mechanics, audit failure handling, early-exit on `sufficient=True`
+- **Updated CLAUDE.md** — registered Phase 3.6 details
+- **Commit 663127b** — Phase 3.6 foundation complete
+
+Conductor is not yet the default CLI behavior; still integrating and testing against live Ollama.
+
+### Decisions Made
+
+- **Executed per Phase 3.6 plan** from Session 10 — all 11 design decisions + 10 implementation steps followed
+- **YAML renderer chosen** (not prose) — simpler for model, matches CLAUDE.md example
+- **Fail-open on Auditor error** — if Auditor crashes, return what we have rather than blocking research
+
+### Incomplete
+
+**MPC `search_topic` tool NOT YET WIRED** — still returns raw results. Needs:
+- Import Conductor + build_default_auditor
+- Change return shape to `{query, results, iterations_run, verdict, audit_failed}`
+- Call `research_topic()` instead of single `search_and_extract()` pass
+
+### Next
+
+- [ ] **Wire Conductor into MPC `search_topic`** (Phase 3.6 incomplete)
+- [ ] **Test Conductor end-to-end** — verify cascade works with live queries
+- [ ] **A/B benchmark renderers** (optional research track, post-merge)
+- [ ] **Open PR for phase-3.6-conductor** (after MPC wiring done)
 
 ---
 
@@ -70,79 +189,6 @@ Resumed after Phase 3.5 MCP merge. User wanted to design + build Auditor interac
 - [ ] A/B benchmark harness comparing YAMLRenderer vs ProseRenderer on real queries (research tool, post-merge)
 - [ ] Pre-existing `cli.py` default-model change (`qwen3:14b` → `gemma3:12b`) — still uncommitted on master, decide to commit or discard
 - [ ] 3.1 CLI batch mode, 3.2 JSONL event log (both optional)
-
----
-
-## 2026-04-13 — Session 8: Phase 3.5 — MCP Server + Model Benchmarking
-
-### Context
-
-Resumed from Session 7 (Phase 3.3 SQLite store done, 85 tests passing). Goal: Phase 3.5 MCP server, then housekeeping + model benchmarking.
-
-### What Was Done
-
-- **Phase 3.5 — MCP server:** `web_research/mcp/server.py` using FastMCP, three tools: `research_url`, `search_topic`, `query_knowledge`. Option B (re-query store after CLI call, no changes to cli.py). `focus` auto-derives `prompt_type`.
-- **`run-server.sh`:** bash entry point, `cd`s to project dir before `uv run python -m web_research.mcp.server`; stdio transport.
-- **`.mcp.json`:** registered at repo root and also added to `/home/leandror/workspaces/llm/.mcp.json` (LLM repo now has access too).
-- **`pyproject.toml`:** added `mcp[cli]>=1.0` dependency; `uv sync` confirmed clean install.
-- **`.gitignore`:** added `tools/web-research/output/` and `*.txt` (session handoff scratch files).
-- **CLAUDE.md codegen priority updated:** gemma3:12b (`my-python-g3-12b`) added at #2; context-files rule documented.
-- **Model benchmark (with context files):** `my-python-q3c30` → ACCEPTED; `my-python-g3-12b` → IMPROVED. Without context: both REJECTED. Context files lift both models by at least one tier.
-- **MCP smoke-tested live:** all three tools loaded in session, `query_knowledge` + `research_url` cache-hit path verified working.
-- **Branch hygiene:** committed on master by mistake → created `phase-3.5-mcp-server` branch, cherry-picked, reset master to `de717a0`.
-
-### Decisions Made
-
-- **Option B for MCP return values** — wrap CLI calls, re-query store after; no changes to existing `cli.py` functions (preserves 85 tests).
-- **`focus` auto-derives `prompt_type`** — MCP callers pass `focus` only; server derives `"focused"` vs `"open"` automatically.
-- **`my-python-g3-12b` at priority #2** — real contender with context files; q3c30 still edges it on cleanliness (no stray typing imports, no hallucinated model names).
-- **Context files rule codified** — always pass framework examples when calling `generate_code` for SDK-specific tasks.
-
-### Next
-
-- [ ] **3.4 — Auditor** — sufficiency check agent; plugs into MCP as `search_topic` consumer; build now that MCP interface is real
-- [ ] Merge PR `phase-3.5-mcp-server` → master
-- [ ] 3.1 — CLI batch mode (optional)
-- [ ] 3.2 — JSONL event log (optional, feeds Auditor)
-- [ ] Deferred: SearXNG Docker setup
-
----
-
-## 2026-04-07 — Session 7: Phase 3.3 + Test Suite + Repo Housekeeping
-
-### Context
-
-Resumed from Phase 2B (PR merged to master). Goal was Phase 3 — started with 3.3 (knowledge store) as highest-value entry point, then discovered and resolved structural questions about the repo layout, then established a full test suite.
-
-### What Was Done
-
-- **Phase 3.3 — SQLite knowledge store:** `web_research/knowledge/store.py` + `__init__.py`. Supports `save`, `has_url`, `query(topic)`, `recent(n)`, context manager. Stdlib only (sqlite3).
-- **cli.py wired to store:** both subcommands now persist to `output/knowledge.db` by default; `search` skips already-known URLs (`has_url` gate); `--db` / `--no-db` flags added.
-- **Repo structure investigation:** confirmed `tools/<name>/` nesting is correct — polyglot monorepo intent, repo name is a placeholder (will rename). `tools/web-research/` nesting looks odd only because it shares the placeholder repo name.
-- **spike/ retired:** code fully promoted to `tools/web-research/` in Phase 2A. Deleted spike/ and orphaned root `pyproject.toml` / `uv.lock`. `.memories/` files retain historical context.
-- **Docs/tracking cleanup:** `index.md`, `README.md`, `session-context.md`, `tasks.md` updated; spike benchmark findings and TOML migration task restored after over-aggressive cleanup.
-- **pytest suite — 85 tests, 7 modules:**
-  - `tests/extraction/`: chunker, cleaners, merger, models, output
-  - `tests/search/`: filters
-  - `tests/knowledge/`: store (full 3.3 coverage)
-  - `conftest.py` with shared fixtures; autouse lru_cache clearing; monkeypatch over patch.object
-
-### Decisions Made
-
-- **MCP server insert as 3.5** — after 3.3, before Auditor (3.4); building after MCP exposure surfaces what Auditor interface needs. `has_url` / `query_knowledge` make it worth having.
-- **tools/ structure confirmed** — polyglot intent; not a bug; repo rename pending.
-- **spike/ deletion safe** — all code promoted, benchmarks preserved in docs.
-- **.memories/ retain history** — keep spike references in memory files even when filesystem is gone; they serve agents, not as filesystem pointers.
-- **TDD baseline established** — `uv run --group dev pytest`; new modules get matching test file; integration tests (fetcher, extractor, search engine) intentionally skipped.
-- **Codegen verdicts (my-python-q3c30, 7 calls):** 1 ACCEPTED, 6 IMPROVED — recurring defect: `model_copy()` (Pydantic method on plain dataclass), wrong cache clearing, wrong exception types in mocks.
-
-### Next
-
-- [ ] **3.5 — MCP server** — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge`
-- [ ] **3.4 — Auditor** — sufficiency check; build after MCP to validate interface
-- [ ] 3.1 — CLI batch mode (optional, not blocking)
-- [ ] 3.2 — JSONL event log (optional, feeds Auditor)
-- [ ] Deferred: SearXNG Docker setup
 
 ---
 

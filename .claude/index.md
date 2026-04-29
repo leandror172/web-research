@@ -57,6 +57,7 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `tools/web-research/tests/extraction/` | Unit tests: chunker, cleaners, merger, models, output |
 | `tools/web-research/tests/search/` | Unit tests: filters |
 | `tools/web-research/tests/knowledge/` | Unit tests: store (Phase 3.3 coverage) |
+| `tools/web-research/benchmarks/auditor_ab.py` | A/B benchmark: YAML vs Prose renderer — pins signals+entries, calls ModelChecker directly, `temperature=0`+seed for determinism |
 
 ---
 

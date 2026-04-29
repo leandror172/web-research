@@ -14,6 +14,7 @@ from web_research.extraction.merger import merge_results
 from web_research.extraction.models import max_extract_chars
 from web_research.extraction.output import JsonOutputWriter
 from web_research.extraction.protocols import ExtractionConfig
+from web_research.conductor import build_default_auditor, iterate
 from web_research.knowledge.store import KnowledgeStore
 from web_research.search.firecrawl import FirecrawlSearchEngine
 from web_research.search.filters import is_blacklisted
@@ -100,15 +101,20 @@ def search_and_extract(
     skip_domains: frozenset[str] = frozenset(),
     fetcher: str = "httpx",
     store: KnowledgeStore | None = None,
-) -> None:
-    """Search the web and extract from top results."""
+) -> list[str]:
+    """Search the web and extract from top results.
+
+    Returns the list of URLs that were freshly extracted this round
+    (cached/skipped/errored URLs are excluded). The Conductor uses this
+    signal to detect rounds that produced no new knowledge.
+    """
     engine = FirecrawlSearchEngine()
     print(f"Searching for '{query}'...")
     results = engine.search(query, limit)
 
     if not results:
         print("No results found.")
-        return
+        return []
 
     print(f"\n--- Search Results ---")
     for r in results:
@@ -124,9 +130,10 @@ def search_and_extract(
 
     if not filtered:
         print("No results after domain filtering.")
-        return
+        return []
 
     usable_count = 0
+    new_urls: list[str] = []
     for i, r in enumerate(filtered):
         if usable_count >= top:
             break
@@ -153,6 +160,7 @@ def search_and_extract(
                 query=query,
             )
             usable_count += 1
+            new_urls.append(r.url)
         except ThinContentError:
             print(f"Skipping — thin content: {r.url}")
         except Exception as e:
@@ -160,6 +168,66 @@ def search_and_extract(
 
     print(f"\n{'='*60}")
     print(f"Done. Extracted {usable_count} usable pages for query: {query}")
+    return new_urls
+
+
+def _run_search(args, store: KnowledgeStore | None) -> None:
+    """Run the audit-driven search loop via Conductor."""
+    skip_domains = frozenset(
+        d.strip() for d in args.skip_domains.split(",") if d.strip()
+    )
+
+    def _do_search(query: str, **_) -> list[str]:
+        return search_and_extract(
+            query=query,
+            limit=args.limit,
+            top=args.top,
+            model=args.model,
+            prompt_type=args.prompt_type,
+            focus=args.focus,
+            cleaner=args.cleaner,
+            output_dir=args.output_dir,
+            min_chars=args.min_chars,
+            skip_domains=skip_domains,
+            fetcher=args.fetcher,
+            store=store,
+        )
+
+    auditor = None if args.no_audit or store is None else build_default_auditor(store)
+    max_iter = 1 if args.no_audit else args.max_iterations
+
+    final = None
+    for result in iterate(
+        args.query,
+        search_and_extract=_do_search,
+        auditor=auditor,
+        max_iterations=max_iter,
+    ):
+        final = result
+        _print_iteration_banner(result, max_iter)
+
+    if final is not None and final.verdict is not None:
+        print(f"\n=== Final verdict ===")
+        print(f"Sufficient: {final.verdict.sufficient} ({final.verdict.confidence})")
+        if final.verdict.reasoning:
+            print(f"Reasoning: {final.verdict.reasoning}")
+
+
+def _print_iteration_banner(result, max_iter: int) -> None:
+    banner = f"\n[iteration {result.iteration + 1}/{max_iter}] query: {result.query_used!r} → {len(result.new_urls)} new URL(s)"
+    print(banner)
+    if result.audit_failed:
+        print("  Auditor: FAILED — continuing without verdict")
+        return
+    if result.verdict is None:
+        return
+    v = result.verdict
+    status = "sufficient" if v.sufficient else "insufficient"
+    print(f"  Auditor: {status} ({v.confidence})")
+    if v.missing_topics:
+        print(f"    Missing: {', '.join(v.missing_topics)}")
+    if not v.sufficient and v.recommended_queries:
+        print(f"    Next query: {v.recommended_queries[0]!r}")
 
 
 def main() -> None:
@@ -193,6 +261,17 @@ def main() -> None:
     search_parser.add_argument("--fetcher", default="httpx", choices=["httpx", "firecrawl"])
     search_parser.add_argument("--db", default="output/knowledge.db", help="Knowledge store path")
     search_parser.add_argument("--no-db", action="store_true", help="Skip knowledge store")
+    search_parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=3,
+        help="Max audit-driven iterations (default 3)",
+    )
+    search_parser.add_argument(
+        "--no-audit",
+        action="store_true",
+        help="Skip Auditor; run a single search+extract round",
+    )
 
     args = parser.parse_args()
 
@@ -213,20 +292,7 @@ def main() -> None:
                 store=store,
             )
         elif args.command == "search":
-            search_and_extract(
-                query=args.query,
-                limit=args.limit,
-                top=args.top,
-                model=args.model,
-                prompt_type=args.prompt_type,
-                focus=args.focus,
-                cleaner=args.cleaner,
-                output_dir=args.output_dir,
-                min_chars=args.min_chars,
-                skip_domains=frozenset(d.strip() for d in args.skip_domains.split(",") if d.strip()),
-                fetcher=args.fetcher,
-                store=store,
-            )
+            _run_search(args, store)
     finally:
         if store is not None:
             store.close()
