@@ -196,15 +196,26 @@ def _run_search(args, store: KnowledgeStore | None) -> None:
     auditor = None if args.no_audit or store is None else build_default_auditor(store)
     max_iter = 1 if args.no_audit else args.max_iterations
 
+    def _on_iteration_start(iteration: int, max_iterations: int, query: str) -> None:
+        bar = "─" * 58
+        print(f"\n┌{bar}┐")
+        print(f"│ Iteration {iteration + 1}/{max_iterations} — {query!r}")
+        print(f"└{bar}┘")
+
+    def _on_pre_audit(_query: str) -> None:
+        print("  Auditing knowledge coverage...")
+
     final = None
     for result in iterate(
         args.query,
         search_and_extract=_do_search,
         auditor=auditor,
         max_iterations=max_iter,
+        on_iteration_start=_on_iteration_start,
+        on_pre_audit=_on_pre_audit,
     ):
         final = result
-        _print_iteration_banner(result, max_iter)
+        _print_iteration_summary(result)
 
     if final is not None and final.verdict is not None:
         print(f"\n=== Final verdict ===")
@@ -213,9 +224,8 @@ def _run_search(args, store: KnowledgeStore | None) -> None:
             print(f"Reasoning: {final.verdict.reasoning}")
 
 
-def _print_iteration_banner(result, max_iter: int) -> None:
-    banner = f"\n[iteration {result.iteration + 1}/{max_iter}] query: {result.query_used!r} → {len(result.new_urls)} new URL(s)"
-    print(banner)
+def _print_iteration_summary(result) -> None:
+    print(f"  → {len(result.new_urls)} new URL(s) extracted")
     if result.audit_failed:
         print("  Auditor: FAILED — continuing without verdict")
         return
@@ -245,6 +255,7 @@ def main() -> None:
     extract_parser.add_argument("--fetcher", default="httpx", choices=["httpx", "firecrawl"])
     extract_parser.add_argument("--db", default="output/knowledge.db", help="Knowledge store path")
     extract_parser.add_argument("--no-db", action="store_true", help="Skip knowledge store")
+    extract_parser.add_argument("--log-level", default="WARNING", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="Logging verbosity (default: WARNING)")
 
     # Search command
     search_parser = subparsers.add_parser("search", help="Search and extract from results")
@@ -272,8 +283,14 @@ def main() -> None:
         action="store_true",
         help="Skip Auditor; run a single search+extract round",
     )
+    search_parser.add_argument("--log-level", default="WARNING", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="Logging verbosity (default: WARNING)")
 
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=getattr(logging, args.log_level),
+        format="%(levelname)s %(name)s: %(message)s",
+    )
 
     store: KnowledgeStore | None = None
     if not args.no_db:

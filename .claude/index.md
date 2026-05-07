@@ -61,6 +61,14 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 
 ---
 
+## Dev Commands
+
+| Command | Purpose |
+|---------|---------|
+| `make help` | List available make targets |
+| `make logs` | `tail -f` the MCP server log |
+| `make test` | Run the full pytest suite |
+
 ## Scripts & Tools
 
 | Script | Purpose |

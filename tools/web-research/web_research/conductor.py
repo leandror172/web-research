@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -104,6 +104,8 @@ def iterate(
     auditor,
     max_iterations: int = 3,
     queries_per_iteration: int = 1,
+    on_iteration_start: Callable[[int, int, str], None] | None = None,
+    on_pre_audit: Callable[[str], None] | None = None,
     **search_kwargs: Any,
 ) -> Iterator[IterationResult]:
     """Yield one IterationResult per round; stop per the documented conditions."""
@@ -111,6 +113,9 @@ def iterate(
     current_query = query
 
     while True:
+        if on_iteration_start is not None:
+            on_iteration_start(iteration, max_iterations, current_query)
+
         new_urls = search_and_extract(current_query, **search_kwargs)
 
         if auditor is None:
@@ -123,6 +128,8 @@ def iterate(
             )
             return
 
+        if on_pre_audit is not None:
+            on_pre_audit(current_query)
         verdict, audit_failed = _audit(current_query, auditor)
         yield IterationResult(
             iteration=iteration,

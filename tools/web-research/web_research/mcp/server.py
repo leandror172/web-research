@@ -11,6 +11,9 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import io
+import logging
+import os
+import pathlib
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -18,6 +21,18 @@ from mcp.server.fastmcp import FastMCP
 from web_research.cli import extract_single_url, search_and_extract
 from web_research.conductor import ResearchResult, build_default_auditor, research_topic
 from web_research.knowledge.store import KnowledgeStore
+
+_log_level = os.environ.get("WR_LOG_LEVEL", "WARNING").upper()
+_log_dir = pathlib.Path(
+    os.environ.get("WR_LOG_FILE", str(pathlib.Path(__file__).parents[3] / "output" / "mcp-server.log"))
+).parent
+_log_file = _log_dir / f"mcp-server-{os.getpid()}.log"
+_log_dir.mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    level=getattr(logging, _log_level, logging.WARNING),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    handlers=[logging.FileHandler(_log_file)],
+)
 
 mcp = FastMCP("web-research")
 
