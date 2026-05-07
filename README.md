@@ -17,7 +17,9 @@ structured extraction from web pages.
 ## Architecture
 
 ```
-Search (Firecrawl) → Fetch (httpx) → Clean (trafilatura) → Chunk → Extract (Ollama) → JSON
+Search (Firecrawl) → Fetch (httpx) → Clean (trafilatura) → Chunk → Extract (Ollama) → Knowledge store
+                                                                              ↑
+                                                          Conductor loop driven by Auditor verdicts
 ```
 
 Every pipeline step implements a **Python Protocol** — independently callable,
@@ -26,13 +28,16 @@ one interface; nothing else changes.
 
 ```
 web-research/
-├── engine/              # orchestration layer (planned — Conductor, Dispatcher, Auditor, Lens)
+├── engine/              # orchestration layer (planned — Dispatcher, Lens)
 ├── tools/
 │   └── web-research/    # search + extraction + knowledge pipeline
 │       └── web_research/
 │           ├── extraction/   # fetch, clean, chunk, extract, merge
 │           ├── search/       # search engine protocol + Firecrawl impl
 │           ├── knowledge/    # SQLite knowledge store (persists across sessions)
+│           ├── auditor/      # sufficiency review — heuristic gate + model checker
+│           ├── conductor.py  # iterative research loop driven by Auditor verdicts
+│           ├── mcp/          # FastMCP server — research_url, search_topic, query_knowledge
 │           └── cli.py        # CLI entry point
 └── docs/research/       # design decisions, benchmarks, architecture
 ```
@@ -43,15 +48,14 @@ Tools are self-contained packages (own `pyproject.toml`, own dependencies). They
 communicate through defined interfaces — CLI, HTTP, or MCP — never shared Python
 imports. This allows polyglot tools and independent deployment.
 
-The planned orchestration layer (`engine/`) has four agents modeled as DDD bounded
-contexts:
+The orchestration layer has four agents modeled as DDD bounded contexts:
 
-| Agent | Responsibility |
-|-------|---------------|
-| **Conductor** | Manages research lifecycle — what to research, when to stop, state persistence |
-| **Dispatcher** | Tool execution — calls tools, builds pipelines, selects models per task |
-| **Auditor** | Sufficiency gate — reviews results, decides if more research is needed |
-| **Lens** | Context proxy — summarizes results so the Conductor's context stays clean |
+| Agent | Responsibility | Status |
+|-------|---------------|--------|
+| **Conductor** | Manages research lifecycle — iterates until Auditor says sufficient | Live |
+| **Auditor** | Sufficiency gate — heuristic pre-filter + local model verdict | Live |
+| **Dispatcher** | Tool execution — calls tools, builds pipelines, selects models per task | Planned |
+| **Lens** | Context proxy — summarizes results so the Conductor's context stays clean | Planned |
 
 ## Usage
 
@@ -67,17 +71,21 @@ uv sync
 # Extract structured data from a single URL
 uv run web-research extract https://docs.crawl4ai.com
 
-# Search the web and extract from top results
-uv run web-research search "python asyncio best practices" --top 3
+# Search the web and extract from top results (single round)
+uv run web-research search "python asyncio best practices" --top 3 --no-audit
+
+# Iterative research — Conductor loop, stops when Auditor says sufficient
+uv run web-research search "python asyncio best practices" --max-iterations 3
 
 # Focused extraction — extract only what's relevant to a specific question
 uv run web-research extract https://example.com --prompt-type focused --focus "installation steps"
 
-# Use a different model
-uv run web-research extract https://example.com --model qwen3:8b
+# Verbose logging
+uv run web-research search "httpx" --log-level INFO
 ```
 
-Output is saved as JSON files in `output/`, one per URL.
+Output is saved as JSON files in `output/`, one per URL, and persisted to the SQLite
+knowledge store (`output/knowledge.db`) for reuse across sessions.
 
 ### CLI options
 
@@ -87,9 +95,33 @@ Output is saved as JSON files in `output/`, one per URL.
 | `--prompt-type` | `open` | `open` (general) or `focused` (targeted) |
 | `--focus` | — | Focus question (required when `--prompt-type focused`) |
 | `--cleaner` | `trafilatura` | HTML cleaner (`trafilatura` or `html2text`) |
-| `--top` | `3` | Number of search results to extract (search only) |
+| `--top` | `3` | Number of search results to extract per iteration (search only) |
 | `--limit` | `5` | Number of search results to fetch (search only) |
+| `--max-iterations` | `3` | Max Conductor iterations before stopping (search only) |
+| `--no-audit` | off | Skip Auditor; run a single search+extract round (search only) |
 | `--output-dir` | `output` | Directory for JSON output |
+| `--log-level` | `WARNING` | Logging verbosity: `DEBUG` / `INFO` / `WARNING` / `ERROR` |
+
+### Dev commands
+
+```bash
+make test    # run the full pytest suite
+make logs    # tail -F all MCP server session logs
+```
+
+### MCP server
+
+The tool exposes three MCP tools to Claude Code:
+
+| Tool | Description |
+|------|-------------|
+| `research_url` | Fetch and extract a URL; returns cached result if already known |
+| `search_topic` | Iterative research loop — same Conductor logic as the CLI |
+| `query_knowledge` | Query the local SQLite knowledge store |
+
+The server runs via stdio transport, launched automatically by Claude Code. Logs are
+written to `output/mcp-server-{pid}.log` (one file per session). Set `WR_LOG_LEVEL`
+in `.mcp.json` to `DEBUG` or `INFO` to increase verbosity.
 
 ## Model benchmarks
 
@@ -131,8 +163,11 @@ A single "best model" doesn't exist — it depends on the task.
 | 1 — Spike | Extraction pipeline + model benchmarks | Complete |
 | 2A — Search | Search integration + CLI | Complete |
 | 2B — Content quality | Content guard, domain filtering, JS-rendered site support | Complete |
-| 3 — Knowledge | SQLite store, JSONL log, Auditor, batch CLI | In progress |
-| 4 — MCP | Claude Code integration (`research_url`, `search_topic`, `query_knowledge`) | Planned |
+| 3.3 — Knowledge store | SQLite knowledge store, persists across sessions | Complete |
+| 3.4 — Auditor | Sufficiency review — heuristic gate + model checker (qwen3:14b) | Complete |
+| 3.5 — MCP server | Claude Code integration (`research_url`, `search_topic`, `query_knowledge`) | Complete |
+| 3.6 — Conductor | Iterative research loop driven by Auditor verdicts | Complete |
+| Next | CLI batch mode, JSONL event log, heuristic threshold tuning | Planned |
 
 ## Design documents
 
