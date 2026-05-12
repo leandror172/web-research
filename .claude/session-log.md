@@ -1,6 +1,33 @@
 # Session Log
 
-**Current Session:** 2026-05-07 | **Phase:** Phase 3 complete — progress logging + MCP log file + Makefile
+**Current Session:** 2026-05-12 | **Phase:** Phase 3 complete — bug fix + task hygiene
+
+---
+
+## 2026-05-12 — Session 15: MCP log path bug fix + task hygiene
+
+### Context
+
+Resumed on `feat/progress-logging` (PR #8 open). User verified Session 14 smoke tests — 1–3 passed, 4–5 failed (logs in wrong directory).
+
+### What Was Done
+
+- **Restored dropped task pointer** — `auditor-iteration-control-ideas` note was silently removed from QUICK.md during Session 14's Phase 3 rewrite; restored as task 3.7 in `tasks.md` and added `## Parked / Revisit` section back to QUICK.md with updated wording (ship condition now met)
+- **Synced task status** — marked 3.4/3.5/3.6 complete; corrected test count to 130; added progress logging to "Also completed" list
+- **Fixed MCP log path off-by-one** — `pathlib.Path(__file__).parents[3]` resolved to `tools/` instead of `tools/web-research/`, so logs landed in `tools/output/` instead of `tools/web-research/output/`; fix: `parents[2]`
+- **Updated PR #8 description** — added bug fix + completed smoke test checklist
+
+### Decisions Made
+
+- Dropped note graduates to task, not just restored — 3.6 had shipped so the "revisit after ship" condition was already met
+
+### Next
+
+- [ ] Merge PR #8
+- [ ] Phase 3.7 — Auditor loop tuning (review real-run logs; confidence threshold vs iteration-aware prompt) [ref:auditor-iteration-control-ideas]
+- [ ] Phase 3.1 — CLI batch mode (deferred)
+- [ ] Phase 3.2 — JSONL event log (deferred)
+- [ ] Add `logger.debug()`/`logger.info()` in auditor/store/extractor so `--log-level DEBUG` actually surfaces useful detail
 
 ---
 
@@ -84,42 +111,7 @@ Resumed on `phase-3.6-conductor`. PR #7 open (user handling merge). Previous ses
 ---
 
 ## 2026-04-28 — Session 12: Phase 3.6 — MCP wiring + A/B benchmark
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`, `.claude/archive/session-log-2026-04-13-to-2026-04-13.md`, `.claude/archive/session-log-2026-04-23-to-2026-04-28.md`
-
----
-
-## 2026-04-28 — Session 12: Phase 3.6 — MCP wiring + A/B benchmark
-
-### Context
-
-Resumed on `phase-3.6-conductor` branch. Conductor was built (174 lines) but MCP `search_topic` still returned raw entries. Goal was to complete Phase 3.6 by wiring the Conductor into MCP, testing end-to-end, and opening the PR.
-
-### What Was Done
-
-- **Wired Conductor into MCP `search_topic`** (`mcp/server.py`): replaced single-round search with full `research_topic()` loop; new return shape `{query, results, iterations_run, verdict, audit_failed}`; two-pass results collection (LIKE on original query + per-URL for follow-up iterations)
-- **Fixed cached-results bug** (caught during live test): `_result_to_dict` was returning `results=[]` when all URLs were already cached (cached URLs don't appear in `new_urls`); fixed with two-pass store query
-- **Live end-to-end test**: `search "sqlite full text search python" --max-iterations 2` — heuristic passed to model, model returned `sufficient=False` with structured `missing_topics` + `recommended_queries`, loop stopped correctly on `new_urls=[]`
-- **Opened PR #7**: `phase-3.6-conductor` → master — 5 commits: Conductor core, CLI wiring, MCP wiring, cached-results fix, benchmark
-- **A/B benchmark** (`benchmarks/auditor_ab.py`, 194 lines): pins signals+entries per query, calls `ModelChecker.check()` directly per renderer with `temperature=0` + `seed=42`; run with `--queries` or `--top N`
-- **130 tests passing** throughout
-
-### Decisions Made
-
-- **Two-pass results collection in MCP** — LIKE on original query catches cached iteration-1 hits; per-URL lookup covers follow-up iteration results that wouldn't substring-match the original query
-- **Benchmark calls `ModelChecker.check()` directly** (not `Auditor.check()`) — bypasses store re-query so both renderers see identical pinned input; the only variable is the renderer
-- **`temperature=0` + `seed=42`** in Ollama payload for benchmark determinism
-
-### Findings (A/B benchmark, 2 queries)
-
-- Both renderers agree on `sufficient` verdict in both cases
-- Confidence diverges on sparse single-source data: YAML→`low`, Prose→`medium`
-- Hypothesis: YAML makes sparseness more legible as a discrete field vs embedded in prose
-
-### Next
-
-- [ ] **Merge PR #7** (all tests passing, live-verified)
-- [ ] **Re-run A/B benchmark with richer data** — run 3-4 more searches to get 4-5 entries per query, then `uv run python benchmarks/auditor_ab.py --top 5`
-- [ ] **Optional deferred:** Phase 3.1 (CLI batch mode), Phase 3.2 (JSONL event log), heuristic threshold tuning
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`, `.claude/archive/session-log-2026-04-13-to-2026-04-13.md`, `.claude/archive/session-log-2026-04-23-to-2026-04-28.md`, `.claude/archive/session-log-2026-04-28-to-2026-04-28.md`
 
 ---
 

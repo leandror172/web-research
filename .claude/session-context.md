@@ -11,16 +11,16 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active branch:** `feat/progress-logging` — progress logging + MCP log file + Makefile
+- **Active branch:** `feat/progress-logging` — PR #8 open; ready to merge
 - **Completed:** Phase 3 fully merged to master (PR #7) — Conductor + Auditor + MCP server all live
-- **Completed (this session):** Progress logging — `on_iteration_start`/`on_pre_audit` callbacks in `iterate()`; per-PID MCP log file (`output/mcp-server-{pid}.log`); `WR_LOG_LEVEL` env var; `--log-level` per CLI subcommand; `Makefile` with `make logs` / `make test`
+- **Completed (progress logging branch):** callbacks in `iterate()`; per-PID MCP log file (`tools/web-research/output/mcp-server-{pid}.log`); `WR_LOG_LEVEL`; `--log-level` per CLI subcommand; `Makefile`; log path bug fix
 - **Tests:** 130 pytest tests passing — `make test` or `uv run --group dev pytest` from `tools/web-research/`
-- **MCP server:** live; logs to `output/mcp-server-{pid}.log`; `WR_LOG_LEVEL` set in `.mcp.json`; `make logs` to tail
+- **MCP server:** live; logs to `tools/web-research/output/mcp-server-{pid}.log`; `WR_LOG_LEVEL` in `.mcp.json`; `make logs` to tail
 - **Auditor:** heuristic gate → model checker (qwen3:14b, YAML renderer); YAML confirmed production default (A/B benchmark)
 - **Conductor:** `iterate()` generator with callbacks; `research_topic()` for batch consumption (MCP path)
 - **Key finding:** Extraction and codegen need different models — task-aware model selection validated
 - **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
-- **Next:** CLI batch mode (3.1), JSONL event log (3.2), heuristic threshold tuning
+- **Next:** Merge PR #8; then 3.7 (Auditor loop tuning), 3.1 (CLI batch), 3.2 (JSONL event log)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->

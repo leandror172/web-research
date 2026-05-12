@@ -82,3 +82,4 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | File | Period |
 |------|--------|
 | `.claude/archive/session-log-2026-04-23-to-2026-04-28.md` | Sessions 10–12 (2026-04-23 → 2026-04-28) |
+| `.claude/archive/session-log-2026-04-28-to-2026-04-28.md` | Session 12 overflow (2026-04-28) |
