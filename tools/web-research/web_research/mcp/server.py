@@ -24,7 +24,7 @@ from web_research.knowledge.store import KnowledgeStore
 
 _log_level = os.environ.get("WR_LOG_LEVEL", "WARNING").upper()
 _log_dir = pathlib.Path(
-    os.environ.get("WR_LOG_FILE", str(pathlib.Path(__file__).parents[3] / "output" / "mcp-server.log"))
+    os.environ.get("WR_LOG_FILE", str(pathlib.Path(__file__).parents[2] / "output" / "mcp-server.log"))
 ).parent
 _log_file = _log_dir / f"mcp-server-{os.getpid()}.log"
 _log_dir.mkdir(parents=True, exist_ok=True)
