@@ -42,6 +42,10 @@ make test    # uv run --group dev pytest (130 tests)
 make logs    # tail -F output/mcp-server-*.log
 ```
 
+## Parked / Revisit
+
+- **Auditor loop tuning** — confidence threshold (Idea 1) vs iteration-aware prompt (Idea 2); 3.6 is shipped, revisit with real-run log data. Task 3.7 in `.claude/tasks.md`. [ref:auditor-iteration-control-ideas]
+
 ## Deeper Memory → KNOWLEDGE.md
 
 - Protocol Boundaries, Ollama Codegen Patterns, Phase 2B Decisions

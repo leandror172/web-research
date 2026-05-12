@@ -55,11 +55,14 @@ information from web pages. Single script, no agents, no search.
 - [ ] 3.1 — CLI wrapper (query / url / batch subcommands) — optional, not blocking
 - [ ] 3.2 — JSONL event log (audit trail, replay) — optional, feeds Auditor
 - [x] 3.3 — SQLite knowledge store (structured facts, basic querying) — complete 2026-04-07
-- [ ] 3.5 — MCP server — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge` ← **NEXT**
-- [ ] 3.4 — Sufficiency check (Auditor) — LLM prompt + iteration logic; build after MCP
+- [x] 3.5 — MCP server — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge`
+- [x] 3.4 — Sufficiency check (Auditor) — heuristic gate → model checker (qwen3:14b, YAML renderer)
+- [x] 3.6 — Conductor — `iterate()` generator + `research_topic()` + progress callbacks
+- [ ] 3.7 — Auditor loop tuning — review real-run logs to decide between confidence threshold (Idea 1) and iteration-aware prompt (Idea 2); see `[ref:auditor-iteration-control-ideas]`
 
 ### Also completed this phase
-- [x] Pytest suite — 85 tests, 7 modules (`uv run --group dev pytest`)
+- [x] Pytest suite — 130 tests, 8 modules (`uv run --group dev pytest`)
+- [x] Progress logging — `on_iteration_start`/`on_pre_audit` callbacks; `WR_LOG_LEVEL`; per-PID MCP log file; `Makefile`
 
 ## Phase 4: Claude Code Integration
 
