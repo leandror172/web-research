@@ -67,3 +67,47 @@ All five gaps closed. Key design choices:
 | Domain blacklist | `search/domain_blacklist.json` + `filters.py` loader | Data/code boundary — agents edit JSON, not Python; `lru_cache` on load |
 
 `FirecrawlFetcher` JSON output has a `Scrape ID: ...` prefix before the JSON payload — use `stdout.find("{")` to locate the JSON start.
+
+## Auditor Design (Phase 3.4, 2026-04-13)
+
+Two-stage cascade: heuristic gate → model checker. Heuristic gates `insufficient` only
+(not enough entries / zero confidence signals) — it cannot judge content quality.
+Model checker uses qwen3:14b with YAML renderer (production default).
+
+**YAML vs Prose renderer A/B (4 queries, temperature=0):** Prose is systematically more
+optimistic — calls `sufficient/high` where YAML calls `insufficient/medium` on identical
+corpora. YAML conservatism is the right property for a research tool (over-stopping is
+the failure mode, not under-stopping).
+
+**Prompt template:** external `.md` file (`auditor/prompts/sufficiency.md`), loaded at
+runtime. Iterate wording without touching code. Literal JSON braces in format strings
+must be `{{ }}` escaped.
+
+## Conductor Design (Phase 3.6, 2026-04-29)
+
+`iterate()` is a generator yielding `IterationResult` per round. Stopping conditions:
+audit failed, max iterations reached, verdict sufficient, no recommended queries, no
+new URLs. `research_topic()` drains it into a `ResearchResult`.
+
+**Iterator pattern rationale:** the CLI can consume results one at a time and print
+progress between yields; the MCP server calls `research_topic()` and gets the full
+result at once. Same core logic, two consumption patterns.
+
+## Progress Logging Architecture (2026-05-07)
+
+**CLI progress:** `iterate()` exposes `on_iteration_start(iteration, max, query)` and
+`on_pre_audit(query)` optional callbacks. CLI wires print lambdas; MCP passes `None`.
+Callbacks, not prints in conductor, because MCP uses stdio — any `print()` in library
+code corrupts the JSON-RPC framing.
+
+**MCP logging:** `logging.FileHandler` writing to `output/mcp-server-{pid}.log`. Per-PID
+file (not rotating) — `RotatingFileHandler` is not multi-process safe; concurrent
+Claude Code sessions would corrupt each other's log on rotation. `WR_LOG_LEVEL` env
+var (set in `.mcp.json`), `WR_LOG_FILE` for custom path.
+
+**CLI logging:** `--log-level` flag on each subparser (not root parser) — argparse
+requires root-level flags before the subcommand; per-subparser flag works in any
+position. `logging.basicConfig` in `main()` activates the root logger.
+
+**Dev convenience:** `Makefile` at repo root — `make logs` (`tail -F output/mcp-server-*.log`),
+`make test`. `-F` not `-f` — follows by name so it survives log rotation.

@@ -1,25 +1,26 @@
 # tools/web-research/ — Quick Memory
 
-*Working memory for this tool. Injected into agents operating here. Keep under 30 lines.*
+*Working memory for this tool. Injected into agents operating here. Keep under 40 lines.*
 
 ## Status
 
-Phase 2B complete (2026-04-06). All five pipeline gaps closed.
+Phase 3 complete (2026-05-07). Conductor + Auditor + MCP server all live.
 CLI: `web-research extract <url>` and `web-research search <query>`.
 
 ## Pipeline
 
 ```
-Search (Firecrawl) → [domain filter] → Fetch (httpx|firecrawl) → [404 check] → Clean → [content guard] → Chunk → Extract (Ollama) → JSON
+Search (Firecrawl) → [domain filter] → Fetch (httpx|firecrawl) → [404 check]
+  → Clean → [content guard] → Chunk → Extract (Ollama) → Knowledge store (SQLite)
+                                              ↑
+                          Conductor loop — iterates until Auditor says sufficient
 ```
 
-- **Search:** `FirecrawlSearchEngine` — Firecrawl CLI subprocess
-- **Domain filter:** `filters.py` — blacklist loaded from `search/domain_blacklist.json`
-- **Fetch:** `HttpxFetcher` (default) or `FirecrawlFetcher` for JS-rendered sites (`--fetcher firecrawl`)
-- **404 check:** raises `ValueError` before cleaning if `status_code >= 400`
-- **Content guard:** raises `ThinContentError` if cleaned text < `--min-chars` (default 200)
-- **Extract:** `OllamaExtractor` → qwen3:14b default, structured JSON output
-- **`--top N`:** means N *usable* results — loop continues past thin/errored pages
+- **Conductor:** `conductor.py` — `iterate()` yields `IterationResult` per round; callbacks `on_iteration_start` / `on_pre_audit` for CLI progress output (MCP passes None — stdout is protocol channel)
+- **Auditor:** `auditor/` — heuristic gate (signals) → model checker (qwen3:14b, YAML renderer); gates `insufficient` only
+- **MCP server:** `mcp/server.py` — FastMCP stdio; logs to `output/mcp-server-{pid}.log`; `WR_LOG_LEVEL` env var
+- **Domain filter:** `filters.py` — blacklist from `search/domain_blacklist.json`
+- **`--top N`:** N *usable* results per iteration — loops past thin/errored pages
 
 ## Package Structure
 
@@ -27,17 +28,27 @@ Search (Firecrawl) → [domain filter] → Fetch (httpx|firecrawl) → [404 chec
 web_research/
   extraction/   # fetcher, firecrawl_fetcher, cleaner, chunker, extractor, merger
   search/       # firecrawl.py, filters.py, domain_blacklist.json, protocols.py
-  cli.py        # argparse entrypoint — extract + search subcommands
+  knowledge/    # store.py — SQLite, save/query/has_url/recent
+  auditor/      # signals.py, renderers.py, model_checker.py, auditor.py, prompts/sufficiency.md
+  mcp/          # server.py — research_url, search_topic, query_knowledge
+  conductor.py  # iterate() + research_topic() + build_default_auditor()
+  cli.py        # argparse — extract + search subcommands; --log-level per subcommand
 ```
+
+## Dev Commands
+
+```bash
+make test    # uv run --group dev pytest (130 tests)
+make logs    # tail -F output/mcp-server-*.log
+```
+
+## Parked / Revisit
+
+- **Auditor loop tuning** — confidence threshold (Idea 1) vs iteration-aware prompt (Idea 2); 3.6 is shipped, revisit with real-run log data. Task 3.7 in `.claude/tasks.md`. [ref:auditor-iteration-control-ideas]
 
 ## Deeper Memory → KNOWLEDGE.md
 
-- **Protocol Boundaries** — swappable components, same pattern as spike
-- **Ollama Codegen Patterns** — verdicts from generating this package with local models
-- **Phase 2B Decisions** — design rationale for each gap fix
-
-## Parked Ideas
-
-- **Auditor iteration control** — confidence threshold + iteration-aware prompt; revisit
-  after 3.6 ships with real-run data. [ref:auditor-iteration-control-ideas] →
-  `docs/auditor-iteration-control-ideas.md`
+- Protocol Boundaries, Ollama Codegen Patterns, Phase 2B Decisions
+- Auditor design (cascade, YAML renderer, heuristic asymmetry)
+- Conductor design (iterator pattern, callback hooks, MCP stdout constraint)
+- Progress logging architecture

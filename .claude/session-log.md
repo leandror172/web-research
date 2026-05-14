@@ -1,6 +1,43 @@
 # Session Log
 
-**Current Session:** 2026-04-29 | **Phase:** Phase 3 complete — A/B benchmark confirmed; YAML renderer decision made
+**Current Session:** 2026-05-07 | **Phase:** Phase 3 complete — progress logging + MCP log file + Makefile
+
+---
+
+## 2026-05-07 — Session 14: Progress logging, MCP log file, Makefile
+
+### Context
+
+Resumed on master (PR #7 merged, branch cleaned up). Phase 3 fully complete. User asked about progress visibility during a running research — found the auditor call was the main silent gap.
+
+### What Was Done
+
+- **Conductor callbacks** — added `on_iteration_start(iteration, max, query)` and `on_pre_audit(query)` optional callables to `iterate()`; CLI wires print lambdas, MCP passes `None`; conductor stays output-agnostic (MCP stdio constraint — any print corrupts JSON-RPC framing)
+- **CLI progress** — iteration header box printed before search, "Auditing knowledge coverage..." before the slow Ollama call; `_print_iteration_banner` → `_print_iteration_summary` (closing summary only, no duplicate header)
+- **CLI `--log-level`** — moved from root parser to each subparser so it works after the subcommand, not just before
+- **MCP log file** — `logging.FileHandler` writing to `output/mcp-server-{pid}.log`; per-PID (not rotating) because `RotatingFileHandler` is not multi-process safe; `WR_LOG_LEVEL` + `WR_LOG_FILE` env vars; default level set in `.mcp.json`
+- **`run-server.sh`** — prints log file path to stderr on startup
+- **`Makefile`** — `make logs` (`tail -F output/mcp-server-*.log`, glob covers all sessions), `make test`, `make help`; `-F` not `-f` (follows by name, survives rotation)
+- **Documentation** — README updated (architecture, phase table, usage, MCP section, dev commands); `.memories/QUICK.md` rewritten for current state; `.memories/KNOWLEDGE.md` Phase 3 decisions appended; `session-context.md` current-status updated
+- **Branch:** `feat/progress-logging` — 2 commits (feat + docs); 130 tests passing throughout
+
+### Decisions Made
+
+- **Per-PID log file over rotating** — `RotatingFileHandler` corrupts under concurrent writes from multiple Claude Code sessions; per-PID is fully isolated with no locking needed
+- **Callbacks over prints in conductor** — MCP server uses stdio transport; `print()` in library code would corrupt the protocol; callbacks keep conductor output-agnostic
+- **`--log-level` per subparser** — argparse root-level flags must precede the subcommand; per-subparser placement works in any position
+- **`tail -F` in Makefile** — `-f` follows by inode (loses track after log rotation); `-F` follows by name and reopens
+
+### Advisor review highlights
+
+Called advisor mid-session; caught: (1) `RotatingFileHandler` not multi-process safe → switched to per-PID, (2) `tail -f` vs `-F` rotation issue, (3) `--log-level` argparse placement, (4) DEBUG pitch overpromised what was actually instrumented.
+
+### Next
+
+- [ ] Phase 3.1 — CLI batch mode (deferred)
+- [ ] Phase 3.2 — JSONL event log (deferred)
+- [ ] Heuristic threshold tuning after more live testing
+- [ ] Add `logger.debug()`/`logger.info()` calls in auditor, store, extractor so `--log-level DEBUG` actually reveals useful detail
 
 ---
 
@@ -47,7 +84,7 @@ Resumed on `phase-3.6-conductor`. PR #7 open (user handling merge). Previous ses
 ---
 
 ## 2026-04-28 — Session 12: Phase 3.6 — MCP wiring + A/B benchmark
-**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`, `.claude/archive/session-log-2026-04-13-to-2026-04-13.md`
+**Previous logs:** `.claude/archive/session-log-2026-03-18-to-2026-03-18.md`, `.claude/archive/session-log-2026-03-20-to-2026-03-20.md`, `.claude/archive/session-log-2026-03-21-to-2026-03-21.md`, `.claude/archive/session-log-2026-03-24-to-2026-03-24.md`, `.claude/archive/session-log-2026-03-27-to-2026-03-27.md`, `.claude/archive/session-log-2026-04-06-to-2026-04-06.md`, `.claude/archive/session-log-2026-04-07-to-2026-04-07.md`, `.claude/archive/session-log-2026-04-13-to-2026-04-13.md`, `.claude/archive/session-log-2026-04-23-to-2026-04-28.md`
 
 ---
 
@@ -83,112 +120,6 @@ Resumed on `phase-3.6-conductor` branch. Conductor was built (174 lines) but MCP
 - [ ] **Merge PR #7** (all tests passing, live-verified)
 - [ ] **Re-run A/B benchmark with richer data** — run 3-4 more searches to get 4-5 entries per query, then `uv run python benchmarks/auditor_ab.py --top 5`
 - [ ] **Optional deferred:** Phase 3.1 (CLI batch mode), Phase 3.2 (JSONL event log), heuristic threshold tuning
-
----
-
-## 2026-04-28 — Session 11: Phase 3.6 — Conductor execution
-
-### Context
-
-Resumed on tip of master (Phase 3.4 Auditor PR merged). User asked to review prior session reasoning, then commit + handoff. Session focused on executing Phase 3.6 from the plan written in Session 10.
-
-### What Was Done
-
-- **Built Conductor** (`web_research/conductor.py` — 174 lines): `IterationResult`, `ResearchResult` dataclasses; `iterate()` generator for CLI; `research_topic()` wrapper for MCP/programmatic; `build_default_auditor()` factory wired to qwen3:14b + YAML renderer
-- **Wired CLI** (`cli.py` — modified 102 lines): `search_and_extract()` now returns `list[str]` (freshly extracted URLs); `_run_search()` invokes Conductor for audit-driven loop
-- **Tests** (`test_conductor.py` — 245 lines): iteration mechanics, audit failure handling, early-exit on `sufficient=True`
-- **Updated CLAUDE.md** — registered Phase 3.6 details
-- **Commit 663127b** — Phase 3.6 foundation complete
-
-Conductor is not yet the default CLI behavior; still integrating and testing against live Ollama.
-
-### Decisions Made
-
-- **Executed per Phase 3.6 plan** from Session 10 — all 11 design decisions + 10 implementation steps followed
-- **YAML renderer chosen** (not prose) — simpler for model, matches CLAUDE.md example
-- **Fail-open on Auditor error** — if Auditor crashes, return what we have rather than blocking research
-
-### Incomplete
-
-**MPC `search_topic` tool NOT YET WIRED** — still returns raw results. Needs:
-- Import Conductor + build_default_auditor
-- Change return shape to `{query, results, iterations_run, verdict, audit_failed}`
-- Call `research_topic()` instead of single `search_and_extract()` pass
-
-### Next
-
-- [ ] **Wire Conductor into MPC `search_topic`** (Phase 3.6 incomplete)
-- [ ] **Test Conductor end-to-end** — verify cascade works with live queries
-- [ ] **A/B benchmark renderers** (optional research track, post-merge)
-- [ ] **Open PR for phase-3.6-conductor** (after MPC wiring done)
-
----
-
-## 2026-04-23 — Session 10: Phase 3.6 design — Conductor wire-up plan
-
-### Context
-
-Resumed on `phase-3.4-auditor` branch (Auditor core built but unwired). User asked to plan wiring the Auditor; explicitly wanted the plan to be runnable from a clean context. Design-discussion session — no code shipped, plan written.
-
-### What Was Done
-
-- **Entry-point analysis:** confirmed MCP is not the sole entry point — CLI `search`, MCP `search_topic`, and programmatic callers all route through `cli.py`'s `search_and_extract`. Auditor belongs in a shared layer above them (Conductor), not in the MCP adapter.
-- **Design decisions locked** (11 items, see plan): take `recommended_queries[0]` per iteration, default `max_iterations=3`, fail-open on Auditor error, break MCP return shape to include verdict, factory-built Auditor, two-layer interface (generator + wrapper), always-search on iteration 0, no event-log scaffolding yet.
-- **Parked ideas stashed:** confidence threshold + iteration-aware Auditor prompt — new doc `tools/web-research/docs/auditor-iteration-control-ideas.md` with `[ref:auditor-iteration-control-ideas]`, revisit criteria documented.
-- **Plan written:** `.claude/plan-phase-3.6-conductor-wireup.md` — 11 decisions + 10 implementation steps + file change list + do-not-do list.
-- **Tracking updates:** QUICK.md (parked-ideas section), index.md (new doc registered).
-
-### Decisions Made
-
-- **Conductor as new module** (`web_research/conductor.py`) — not a package; promote later if it grows.
-- **Two-layer interface:** `iterate()` generator for CLI progress + future event-log hooks; `research_topic()` wrapper for MCP and simple callers.
-- **MCP return shape breaking change accepted** — 3.5 just shipped, right moment; verdict-less MCP response would defeat the wire-up.
-- **Code style:** single-purpose methods; large methods compose smaller ones (user preference recorded in plan).
-- **Scope defense via do-not-do list** in the plan — explicitly excludes confidence threshold, prompt changes, event log, link-following, `research_url` audit.
-
-### Next
-
-- [ ] Execute Phase 3.6 in a clean context from `.claude/plan-phase-3.6-conductor-wireup.md`
-- [ ] Open PR for `phase-3.4-auditor` → master (independent of 3.6; still pending from session 9)
-- [ ] Pre-existing `cli.py` default-model change (`qwen3:14b` → `gemma3:12b`) still uncommitted — decide to commit or discard
-
----
-
-## 2026-04-23 — Session 9: Phase 3.4 — Auditor (cascade) TDD build
-
-### Context
-
-Resumed after Phase 3.5 MCP merge. User wanted to design + build Auditor interactively, pausing after design discussion. Effort set to medium, TDD required, local-model-first codegen with context files.
-
-### What Was Done
-
-- **Design discussion:** settled on **cascade** — heuristic gate for "obviously insufficient" only (never "obviously sufficient", since content-less verdicts are unsafe). Model does all "sufficient" determinations. Heuristic computes structured signals that enrich the model's prompt.
-- **Format design:** YAML for the signals block (structured pre-computed context), prose/markdown for entries. Renderer abstraction makes signals format A/B-testable.
-- **Template as file:** `prompts/sufficiency.md` lives separate from code, tracked for independent iteration. Deliberate departure from `prompts.py` convention (extraction prompts are Python constants).
-- **Branch:** `phase-3.4-auditor` created off master, 2 commits.
-- **Built (TDD, all tests first):**
-  - `auditor/signals.py` — `AuditSignals` frozen dataclass + `HeuristicChecker` (12 tests)
-  - `auditor/renderers.py` — `SignalsRenderer` Protocol + `YAMLRenderer` + `ProseRenderer` (11 tests)
-  - `auditor/prompts/sufficiency.md` — template with `{query}/{signals}/{entries}` slots
-  - `auditor/model_checker.py` — `SufficiencyVerdict` + `ModelChecker` (Ollama JSON-schema structured output, 10 tests)
-  - `auditor/auditor.py` — cascade orchestrator (4 tests)
-- **Added pyyaml dependency.** 37 new tests; full suite 122 passing.
-
-### Decisions Made
-
-- **Heuristic gates insufficient only, never sufficient** — content-less "sufficient" verdicts are asymmetrically risky (false-sufficient stops research early). Heuristic's real role is enriching model context with pre-computed signals, not deciding sufficiency.
-- **Prompt template as `.md` file** (not Python constant) — user wants template iteration separate from code changes. Diffs cleanly, supports A/B variants.
-- **Brace escaping in template** — literal `{{ }}` around the JSON example block because `.format()` is used for slot-filling.
-- **Protocol compliance tests dropped as tautological** — static typing concern, not runtime; other tests already fail if `.render()` is missing.
-- **Handwritten > local-model for fixture architecture** — both q3c30 and g3-12b produced broken tests for the `test_model_checker.py` and `test_auditor.py` files due to interacting pytest-mock/fixture-scope/stub-state constraints. Local models win on repetitive boilerplate; they struggle on stateful-mock scaffolding.
-
-### Next
-
-- [ ] **Wire Auditor into MCP `search_topic`** — the build is done but not yet plugged in; natural follow-up so `search_topic` can iterate on verdicts.
-- [ ] Open PR for `phase-3.4-auditor` → master
-- [ ] A/B benchmark harness comparing YAMLRenderer vs ProseRenderer on real queries (research tool, post-merge)
-- [ ] Pre-existing `cli.py` default-model change (`qwen3:14b` → `gemma3:12b`) — still uncommitted on master, decide to commit or discard
-- [ ] 3.1 CLI batch mode, 3.2 JSONL event log (both optional)
 
 ---
 

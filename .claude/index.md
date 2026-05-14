@@ -61,9 +61,24 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 
 ---
 
+## Dev Commands
+
+| Command | Purpose |
+|---------|---------|
+| `make help` | List available make targets |
+| `make logs` | `tail -F` all MCP server session logs (`output/mcp-server-*.log`) |
+| `make test` | Run the full pytest suite |
+
 ## Scripts & Tools
 
 | Script | Purpose |
 |--------|---------|
 | `.claude/tools/ref-lookup.sh KEY` | Print a `[ref:KEY]` block by key |
 | `.claude/tools/check-ref-integrity.sh` | Find broken ref tags and malformed blocks |
+| `Makefile` | Dev convenience commands — `make logs`, `make test`, `make help` |
+
+## Archives
+
+| File | Period |
+|------|--------|
+| `.claude/archive/session-log-2026-04-23-to-2026-04-28.md` | Sessions 10–12 (2026-04-23 → 2026-04-28) |
