@@ -52,21 +52,21 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 ## Local Model Verdict & Retry Policy
 
 **You MUST read `.claude/overlays/local-model-retry-patterns.md` before evaluating
-any local model output.** It defines the verdict protocol (ACCEPTED/IMPROVED/REJECTED),
+any local model output.** It defines the verdict protocol (0/1/2),
 the decision tree for handling imperfect output, and the cold-start grace period.
 
 Key rules (detail in the reference file):
 - Evaluate every local model response with an explicit verdict
 - Classify imperfect output by defect type, fix scope, and prompt cost — not line count
-- First-call timeouts are `TIMEOUT_COLD_START`, not REJECTED — retry immediately
+- First-call timeouts are `TIMEOUT_COLD_START`, not 0 (rejected) — retry immediately
 <!-- /overlay:ollama-scaffolding -->
 
 ## Python Code Generation Model Priority
 
 When calling `generate_code` for Python, use these models in order (first available wins):
 
-1. `my-python-q3c30` — highest quality overall; ACCEPTED with context files, IMPROVED without (needs RAM offloading, timeout=300)
-2. `my-python-g3-12b` — gemma3 12B; ACCEPTED-level with context files, weaker without; fast, no RAM offloading needed
+1. `my-python-q3c30` — highest quality overall; 2 (accepted) with context files, 1 (improved) without (needs RAM offloading, timeout=300)
+2. `my-python-g3-12b` — gemma3 12B; 2 (accepted)-level with context files, weaker without; fast, no RAM offloading needed
 3. `my-python-q25c14` — VRAM-only fallback, fast, consistent
 4. `my-python-dsc16` — last resort if above unavailable
 
