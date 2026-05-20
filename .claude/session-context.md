@@ -11,16 +11,15 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active branch:** `feat/progress-logging` — PR #8 open; ready to merge
-- **Completed:** Phase 3 fully merged to master (PR #7) — Conductor + Auditor + MCP server all live
-- **Completed (progress logging branch):** callbacks in `iterate()`; per-PID MCP log file (`tools/web-research/output/mcp-server-{pid}.log`); `WR_LOG_LEVEL`; `--log-level` per CLI subcommand; `Makefile`; log path bug fix
-- **Tests:** 130 pytest tests passing — `make test` or `uv run --group dev pytest` from `tools/web-research/`
+- **Active branch:** `feat/queue-based-conductor` — Phase 3.7 committed; PR pending
+- **Completed:** Phase 3 fully merged (all PRs); 3.7 (queue-based Conductor) complete on branch
+- **Conductor:** `iterate()` uses `deque`-based queue; `queries_per_iteration=2` default; `seen` set prevents duplicate queries; Q2 fallback verified in real run
+- **Logging:** auditor.py + conductor.py emit INFO-level verdict/stop/queue logs; `WR_LOG_LEVEL=INFO` in `.mcp.json`; store/extractor still dark
+- **Tests:** 132 pytest tests passing
 - **MCP server:** live; logs to `tools/web-research/output/mcp-server-{pid}.log`; `WR_LOG_LEVEL` in `.mcp.json`; `make logs` to tail
 - **Auditor:** heuristic gate → model checker (qwen3:14b, YAML renderer); YAML confirmed production default (A/B benchmark)
-- **Conductor:** `iterate()` generator with callbacks; `research_topic()` for batch consumption (MCP path)
-- **Key finding:** Extraction and codegen need different models — task-aware model selection validated
 - **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
-- **Next:** Merge PR #8; then 3.7 (Auditor loop tuning), 3.1 (CLI batch), 3.2 (JSONL event log)
+- **Next:** Open PR for feat/queue-based-conductor; then add store/extractor debug logging; 3.1 (CLI batch), 3.2 (JSONL event log)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -51,6 +50,7 @@ For deeper context: `ref-lookup.sh current-status` | `ref-lookup.sh active-decis
 - **Auditor: prompt template is a `.md` file** (`auditor/prompts/sufficiency.md`) — iterate wording independent of code; use `.format()` so literal JSON braces must be `{{ }}` escaped.
 - **SignalsRenderer abstraction (YAML vs prose)** — A/B confirmed: YAML is production default. Prose available but systematically over-optimistic (narrative coherence masks coverage gaps).
 - **Local-model boundary for codegen** — repetitive boilerplate & straightforward impl: offload. Fixture architecture with stateful mocks: hand-write (both q3c30 and g3-12b produced broken `test_model_checker.py`/`test_auditor.py` on this type of task).
+- **Conductor queue model (3.7)** — `iterate()` uses `deque`; `queries_per_iteration=2` default enqueues Q1+Q2 from each verdict; `not new_urls` hard-stop removed; `max_iterations` is the sole budget cap. Chose queue over confidence-threshold (Idea 1) and iteration-aware prompt (Idea 2) because real logs showed a resilience gap, not a calibration problem.
 <!-- /ref:active-decisions -->
 
 <!-- ref:vision -->

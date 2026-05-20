@@ -58,11 +58,16 @@ information from web pages. Single script, no agents, no search.
 - [x] 3.5 — MCP server — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge`
 - [x] 3.4 — Sufficiency check (Auditor) — heuristic gate → model checker (qwen3:14b, YAML renderer)
 - [x] 3.6 — Conductor — `iterate()` generator + `research_topic()` + progress callbacks
-- [ ] 3.7 — Auditor loop tuning — review real-run logs to decide between confidence threshold (Idea 1) and iteration-aware prompt (Idea 2); see `[ref:auditor-iteration-control-ideas]`
+- [x] 3.7 — Auditor loop tuning — replaced scalar loop with deque queue; `queries_per_iteration` default 1→2; Q2 fallback verified in real run
 
 ### Also completed this phase
-- [x] Pytest suite — 130 tests, 8 modules (`uv run --group dev pytest`)
+- [x] Pytest suite — 132 tests, 8 modules (`uv run --group dev pytest`)
 - [x] Progress logging — `on_iteration_start`/`on_pre_audit` callbacks; `WR_LOG_LEVEL`; per-PID MCP log file; `Makefile`
+- [x] Audit logging — INFO-level verdict + stop-reason logs in auditor.py and conductor.py; `WR_LOG_LEVEL` bumped to INFO
+
+### Deferred / follow-on
+- [ ] Add `logger.debug()`/`logger.info()` to `store.py` and extractor pipeline — auditor/conductor now covered; store/extractor still dark under `--log-level DEBUG`
+- [ ] Rename `queries_per_iteration` → `queue_width` — current name implies parallelism; deferred until more callers exist
 
 ## Phase 4: Claude Code Integration
 
