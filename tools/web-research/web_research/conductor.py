@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
+from collections import deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -67,52 +68,30 @@ def _audit(query: str, auditor) -> tuple[SufficiencyVerdict | None, bool]:
         return None, True
 
 
-def _should_stop(
-    iteration: int,
-    max_iterations: int,
-    verdict: SufficiencyVerdict | None,
-    audit_failed: bool,
-    new_urls: list[str],
-) -> bool:
-    if audit_failed:
-        return True
-    if iteration >= max_iterations - 1:
-        return True
-    if verdict is not None and verdict.sufficient:
-        return True
-    if verdict is not None and not verdict.recommended_queries:
-        return True
-    if not new_urls:
-        return True
-    return False
-
-
-def _next_query(
-    verdict: SufficiencyVerdict | None,
-    queries_per_iteration: int,
-) -> str | None:
-    if verdict is None or not verdict.recommended_queries:
-        return None
-    candidates = verdict.recommended_queries[:queries_per_iteration]
-    return candidates[0] if candidates else None
-
-
 def iterate(
     query: str,
     *,
     search_and_extract,
     auditor,
     max_iterations: int = 3,
-    queries_per_iteration: int = 1,
+    queries_per_iteration: int = 2,
     on_iteration_start: Callable[[int, int, str], None] | None = None,
     on_pre_audit: Callable[[str], None] | None = None,
     **search_kwargs: Any,
 ) -> Iterator[IterationResult]:
-    """Yield one IterationResult per round; stop per the documented conditions."""
-    iteration = 0
-    current_query = query
+    """Yield one IterationResult per round.
 
-    while True:
+    Each verdict's recommended_queries (up to queries_per_iteration) are
+    enqueued for future rounds; duplicate queries are skipped. Stops on a
+    sufficient verdict, audit failure, exhausted queue, or max_iterations.
+    """
+    pending: deque[str] = deque([query])
+    seen: set[str] = {query}
+    iteration = 0
+
+    while pending and iteration < max_iterations:
+        current_query = pending.popleft()
+
         if on_iteration_start is not None:
             on_iteration_start(iteration, max_iterations, current_query)
 
@@ -139,14 +118,31 @@ def iterate(
             audit_failed=audit_failed,
         )
 
-        if _should_stop(iteration, max_iterations, verdict, audit_failed, new_urls):
+        if audit_failed:
+            logger.info("stop[%d]: audit failed", iteration)
             return
 
-        next_q = _next_query(verdict, queries_per_iteration)
-        if next_q is None:
+        if verdict is not None and verdict.sufficient:
+            logger.info("stop[%d]: sufficient=True confidence=%s", iteration, verdict.confidence)
             return
-        current_query = next_q
+
+        if verdict is not None:
+            enqueued = 0
+            for q in verdict.recommended_queries:
+                if enqueued >= queries_per_iteration:
+                    break
+                if q not in seen:
+                    pending.append(q)
+                    seen.add(q)
+                    logger.info("queued[%d]: '%s'", iteration, q)
+                    enqueued += 1
+
         iteration += 1
+
+    if not pending:
+        logger.info("stop[%d]: queue exhausted", iteration)
+    else:
+        logger.info("stop[%d]: max_iterations reached (%d)", iteration, max_iterations)
 
 
 def research_topic(
@@ -155,7 +151,7 @@ def research_topic(
     search_and_extract,
     auditor,
     max_iterations: int = 3,
-    queries_per_iteration: int = 1,
+    queries_per_iteration: int = 2,
     **search_kwargs: Any,
 ) -> ResearchResult:
     """Drain iterate() into a ResearchResult."""

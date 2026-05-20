@@ -3,7 +3,7 @@
     "web-research": {
       "command": "/mnt/i/workspaces/web-research/tools/web-research/run-server.sh",
       "env": {
-        "WR_LOG_LEVEL": "WARNING"
+        "WR_LOG_LEVEL": "INFO"
       }
     }
   }

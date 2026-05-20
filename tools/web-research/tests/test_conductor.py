@@ -127,11 +127,12 @@ class TestIterate:
         assert auditor.calls == ["q"]
         assert [c[0] for c in search.calls] == ["q"]
 
-    def test_stops_when_iteration_produces_no_new_urls(self):
+    def test_queue_exhausts_when_follow_up_finds_nothing_and_no_more_recommendations(self):
+        # q2 returns no URLs; its audit has no further recommendations → queue drains naturally
         auditor = FakeAuditor(
             [
                 _verdict(sufficient=False, recommended_queries=["q2"]),
-                _verdict(sufficient=False, recommended_queries=["q3"]),
+                _verdict(sufficient=False, recommended_queries=[]),
             ]
         )
         search = FakeSearchAndExtract({"q": ["u1"], "q2": []})
@@ -149,6 +150,58 @@ class TestIterate:
         assert [r.query_used for r in results] == ["q", "q2"]
         assert [r.new_urls for r in results] == [["u1"], []]
         assert [c[0] for c in search.calls] == ["q", "q2"]
+
+    def test_falls_back_to_second_recommended_when_first_yields_nothing(self):
+        # q_fail returns no URLs but q_ok (second recommendation) does — loop should try q_ok
+        auditor = FakeAuditor(
+            [
+                _verdict(sufficient=False, recommended_queries=["q_fail", "q_ok"]),
+                _verdict(sufficient=False, recommended_queries=[]),
+                _verdict(sufficient=True),
+            ]
+        )
+        search = FakeSearchAndExtract({"q": ["u1"], "q_fail": [], "q_ok": ["u3"]})
+
+        results = list(
+            iterate(
+                "q",
+                search_and_extract=search,
+                auditor=auditor,
+                queries_per_iteration=2,
+                max_iterations=5,
+            )
+        )
+
+        assert len(results) == 3
+        assert [r.query_used for r in results] == ["q", "q_fail", "q_ok"]
+        assert results[2].verdict is not None
+        assert results[2].verdict.sufficient is True
+
+    def test_max_iterations_caps_growing_queue(self):
+        # Each verdict recommends 2 queries; without the cap the queue would keep growing
+        auditor = FakeAuditor(
+            [
+                _verdict(sufficient=False, recommended_queries=["q2", "q3"]),
+                _verdict(sufficient=False, recommended_queries=["q4", "q5"]),
+                _verdict(sufficient=False, recommended_queries=["q6", "q7"]),
+            ]
+        )
+        search = FakeSearchAndExtract(
+            {k: [f"u{i}"] for i, k in enumerate(["q", "q2", "q3", "q4", "q5", "q6", "q7"])}
+        )
+
+        results = list(
+            iterate(
+                "q",
+                search_and_extract=search,
+                auditor=auditor,
+                queries_per_iteration=2,
+                max_iterations=3,
+            )
+        )
+
+        assert len(results) == 3
+        assert [r.query_used for r in results] == ["q", "q2", "q3"]
 
     def test_audit_failure_yields_audit_failed_then_stops(self):
         auditor = FakeAuditor([RuntimeError("model unreachable")])
