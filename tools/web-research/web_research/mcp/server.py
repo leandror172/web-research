@@ -118,8 +118,9 @@ def search_topic(query: str, top: int = 3, max_iterations: int = 3) -> dict[str,
     """Research a topic iteratively, stopping when knowledge is sufficient.
 
     Runs one or more rounds of search+extract driven by the Auditor. Each
-    round may follow up with a recommended query if the current knowledge is
-    insufficient. Returns the final verdict and all accumulated results.
+    verdict's top 2 recommended queries are enqueued as follow-ups; if the
+    first follow-up finds nothing, the second is still tried. Returns the
+    final verdict and all accumulated results.
 
     Args:
         query:          Search query string.
