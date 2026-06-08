@@ -71,3 +71,12 @@ delegates more over time. Knowledge compounds across sessions.
 Full design: `/mnt/i/workspaces/llm/docs/research/web-research-tool-vision.md`
 Spike plan: `/mnt/i/workspaces/llm/docs/research/mvp-spike-plan.md`
 <!-- /ref:vision -->
+
+<!-- ref:session-reading-guide -->
+## Pre-Session Reading Guide
+
+*What to read before each pending work item.*
+
+| Task | Read first | Notes |
+|------|-----------|-------|
+<!-- /ref:session-reading-guide -->

@@ -73,3 +73,8 @@ information from web pages. Single script, no agents, no search.
 
 - [ ] 4.1 — MCP skill: `/research <url>` for high-level workflow
 - [ ] 4.2 — Full agent loop (Conductor + Auditor iteration)
+
+<!-- ref:deferred -->
+## Deferred / Backlog
+
+<!-- /ref:deferred -->
