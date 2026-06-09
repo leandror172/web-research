@@ -38,7 +38,7 @@ web_research/
 ## Dev Commands
 
 ```bash
-make test    # uv run --group dev pytest (130 tests)
+make test    # uv run --group dev pytest (132 tests)
 make logs    # tail -F output/mcp-server-*.log
 ```
 

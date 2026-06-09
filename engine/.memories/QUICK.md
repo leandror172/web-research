@@ -4,7 +4,7 @@
 
 ## Status
 
-Empty — placeholder created 2026-03-26. Engine code arrives in Phase 2B (orchestrator).
+Still empty (2026-06-09). Orchestration layer (Conductor, Auditor) was built inside `tools/web-research/` — engine/ was not used. Whether to migrate or abandon this placeholder is undecided.
 
 ## Purpose
 

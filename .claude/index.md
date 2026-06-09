@@ -81,5 +81,14 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 
 | File | Period |
 |------|--------|
+| `.claude/archive/session-log-2026-03-18-to-2026-03-18.md` | 2026-03-18 (archived 2026-03-27) |
+| `.claude/archive/session-log-2026-03-20-to-2026-03-20.md` | 2026-03-20 (archived 2026-04-06) |
+| `.claude/archive/session-log-2026-03-21-to-2026-03-21.md` | 2026-03-21 (archived 2026-04-07) |
+| `.claude/archive/session-log-2026-03-24-to-2026-03-24.md` | 2026-03-24 (archived 2026-04-13) |
+| `.claude/archive/session-log-2026-03-27-to-2026-03-27.md` | 2026-03-27 (archived 2026-04-23) |
+| `.claude/archive/session-log-2026-04-06-to-2026-04-06.md` | 2026-04-06 (archived 2026-04-23) |
+| `.claude/archive/session-log-2026-04-07-to-2026-04-07.md` | 2026-04-07 (archived 2026-04-28) |
+| `.claude/archive/session-log-2026-04-13-to-2026-04-13.md` | 2026-04-13 (archived 2026-04-28) |
 | `.claude/archive/session-log-2026-04-23-to-2026-04-28.md` | Sessions 10–12 (2026-04-23 → 2026-04-28) |
 | `.claude/archive/session-log-2026-04-28-to-2026-04-28.md` | Session 12 overflow (2026-04-28) |
+| `.claude/archive/2026-05-07-180511-logging.txt` | Terminal capture — 2026-05-07 logging session |

@@ -4,8 +4,9 @@
 
 ## Status
 
-Phase 2A complete (2026-03-27). Search + extraction pipeline working end-to-end.
-Phase 2B next — content quality guard, smarter result filtering, JS-rendered site support.
+Phase 3.7 complete (2026-06-09). Queue-based Conductor, MCP server live, Auditor shipped.
+Conductor uses deque queue; `queries_per_iteration=2`; Q2 fallback verified in real run.
+132 pytest tests passing. Next: store/extractor debug logging; 3.1 (CLI batch), 3.2 (JSONL event log).
 
 ## What This Project Is
 
@@ -19,7 +20,7 @@ supervised, delegates more over time. Knowledge compounds across research sessio
 ```
 web-research/
   spike/          # frozen — Phase 1 extraction proof-of-concept (model benchmarks, pipeline design)
-  engine/         # placeholder — Phase 2B orchestration (Conductor, Dispatcher, Auditor, Lens)
+  engine/         # placeholder — still empty; orchestration (Conductor, Auditor) built inside tools/web-research/
   tools/          # self-contained tools (polyglot, own dependencies each)
     web-research/ # Phase 2A — search + extraction pipeline (Python, uv)
   docs/research/  # design decisions, benchmarks, architecture docs
@@ -35,5 +36,5 @@ web-research/
 
 - **Tool Isolation** — bounded-context architecture, no shared imports
 - **Search Provider Strategy** — Protocol-based, Firecrawl first, local SearXNG planned
-- **Phase Plan** — 1 (spike) → 2A (search, done) → 2B (orchestrator) → 3+ (agents)
+- **Phase Plan** — 1 (spike) → 2A (search) → 2B (orchestrator) → 3 (Conductor+Auditor+MCP, done) → 3.7 (queue, done)
 - **Cross-Repo Connections** — ties to LLM platform and expense classifier projects
