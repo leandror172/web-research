@@ -35,7 +35,7 @@ The full indexing convention (examples, block format, § pointer usage) is docum
 `.claude/index.md` under the "Indexing Conventions" section.
 <!-- /overlay:ref-indexing -->
 
-<!-- overlay:session-tracking v4 -->
+<!-- overlay:session-tracking v6 -->
 ## Resuming Multi-Session Work
 
 **On session start:** run `.claude/tools/resume.sh` — outputs current status, next task, key files, active decisions, and recent commits in ~80-100 lines.
