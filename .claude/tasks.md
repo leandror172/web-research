@@ -28,7 +28,7 @@ information from web pages. Single script, no agents, no search.
 - [ ] Split benchmark tables into separate files, reference via § (saves ~3K tokens on doc load)
 - [ ] Migrate `tools/web-research/web_research/extraction/models.json` to TOML when Python ≥3.11 is the minimum — use `tomllib` (stdlib), drop JSON loader
 - [ ] Relevance-based truncation — select document sections by focus directive before extraction. Needs Dispatcher task-level strategy selection. See § "Deferred: Relevance-based selection" in `docs/research/truncation-design-notes.md`
-- [ ] (LLM repo) Add overlay guidance: when generating code via Ollama, include existing repo files as few-shot context (protocols, implementations, data files). More effective than prose style instructions. Update in the ollama-scaffolding overlay source.
+- [ ] (T-01) **Add overlay guidance: Ollama code gen with repo context** — when generating code via Ollama, include existing repo files as few-shot context (protocols, implementations, data files). More effective than prose style instructions. Update in the ollama-scaffolding overlay source.
 
 ## Phase 2: Search Integration
 
@@ -66,8 +66,8 @@ information from web pages. Single script, no agents, no search.
 - [x] Audit logging — INFO-level verdict + stop-reason logs in auditor.py and conductor.py; `WR_LOG_LEVEL` bumped to INFO
 
 ### Deferred / follow-on
-- [ ] Add `logger.debug()`/`logger.info()` to `store.py` and extractor pipeline — auditor/conductor now covered; store/extractor still dark under `--log-level DEBUG`
-- [ ] Rename `queries_per_iteration` → `queue_width` — current name implies parallelism; deferred until more callers exist
+- [x] (T-02) **Add store/extractor logging** — `logger.debug()`/`logger.info()` to `store.py` and extractor pipeline; auditor/conductor now covered, store/extractor still dark under `--log-level DEBUG`
+- [x] (T-03) **Rename `queries_per_iteration` → `queue_width`** — current name implies parallelism; deferred until more callers exist
 
 ## Phase 4: Claude Code Integration
 

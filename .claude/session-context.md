@@ -11,15 +11,15 @@
 <!-- ref:current-status -->
 ## Current Status
 
-- **Active branch:** `master` — Phase 3.7 merged; `feat/queue-based-conductor` branch still exists but all commits are on master
-- **Completed:** Phase 3 fully merged (all PRs); 3.7 (queue-based Conductor) merged to master
-- **Conductor:** `iterate()` uses `deque`-based queue; `queries_per_iteration=2` default; `seen` set prevents duplicate queries; Q2 fallback verified in real run
-- **Logging:** auditor.py + conductor.py emit INFO-level verdict/stop/queue logs; `WR_LOG_LEVEL=INFO` in `.mcp.json`; store/extractor still dark
+- **Active branch:** `feat/store-extractor-logging` — PR #11 open (store/extractor logging + queue_width rename); `master` is Phase 3.7 merged
+- **Completed:** Phase 3 fully merged; 3.7 (queue-based Conductor) on master; store/extractor logging + queue_width rename done (PR #11, pending merge)
+- **Conductor:** `iterate()` uses `deque`-based queue; `queue_width=2` default (renamed from `queries_per_iteration`); `seen` set prevents duplicate queries; Q2 fallback verified in real run
+- **Logging:** auditor.py + conductor.py + store.py + extractor.py all emit logs — store INFO on save / DEBUG on reads, extractor INFO on completion / DEBUG pre-call / WARNING on malformed response; `WR_LOG_LEVEL=INFO` in `.mcp.json`
 - **Tests:** 132 pytest tests passing
 - **MCP server:** live; logs to `tools/web-research/output/mcp-server-{pid}.log`; `WR_LOG_LEVEL` in `.mcp.json`; `make logs` to tail
 - **Auditor:** heuristic gate → model checker (qwen3:14b, YAML renderer); YAML confirmed production default (A/B benchmark)
 - **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
-- **Next:** Add store/extractor debug logging; 3.1 (CLI batch), 3.2 (JSONL event log)
+- **Next:** Merge PR #11; 3.1 (CLI batch), 3.2 (JSONL event log)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
