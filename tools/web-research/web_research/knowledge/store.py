@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from web_research.extraction.protocols import CleanResult, ExtractionResult
+
+logger = logging.getLogger(__name__)
 
 
 class KnowledgeStore:
@@ -20,6 +23,7 @@ class KnowledgeStore:
         self._conn = sqlite3.connect(self._db_path)
         self._conn.row_factory = sqlite3.Row
         self._create_schema()
+        logger.debug("knowledge store ready: db=%s", self._db_path)
 
     def _create_schema(self) -> None:
         self._conn.executescript("""
@@ -70,13 +74,23 @@ class KnowledgeStore:
             ),
         )
         self._conn.commit()
+        # INSERT OR REPLACE: an existing url is overwritten, so this is save-or-replace.
+        logger.info(
+            "saved extraction: id=%s url=%s model=%s clean_chars=%d",
+            cursor.lastrowid,
+            url,
+            extraction.model,
+            len(clean.text),
+        )
         return cursor.lastrowid
 
     def has_url(self, url: str) -> bool:
         row = self._conn.execute(
             "SELECT COUNT(*) FROM extractions WHERE url = ?", (url,)
         ).fetchone()
-        return row[0] > 0
+        hit = row[0] > 0
+        logger.debug("has_url: url=%s hit=%s", url, hit)
+        return hit
 
     def query(self, topic: str, limit: int = 10) -> list[dict[str, Any]]:
         pattern = f"%{topic}%"
@@ -89,12 +103,14 @@ class KnowledgeStore:
             """,
             (pattern, pattern, pattern, limit),
         ).fetchall()
+        logger.debug("query: topic=%s limit=%d results=%d", topic, limit, len(rows))
         return [self._row_to_dict(r) for r in rows]
 
     def recent(self, n: int = 10) -> list[dict[str, Any]]:
         rows = self._conn.execute(
             "SELECT * FROM extractions ORDER BY extracted_at DESC LIMIT ?", (n,)
         ).fetchall()
+        logger.debug("recent: n=%d results=%d", n, len(rows))
         return [self._row_to_dict(r) for r in rows]
 
     def close(self) -> None:
