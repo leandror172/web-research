@@ -167,7 +167,7 @@ class TestIterate:
                 "q",
                 search_and_extract=search,
                 auditor=auditor,
-                queries_per_iteration=2,
+                queue_width=2,
                 max_iterations=5,
             )
         )
@@ -195,7 +195,7 @@ class TestIterate:
                 "q",
                 search_and_extract=search,
                 auditor=auditor,
-                queries_per_iteration=2,
+                queue_width=2,
                 max_iterations=3,
             )
         )
@@ -223,7 +223,7 @@ class TestIterate:
         assert auditor.calls == ["q"]
         assert [c[0] for c in search.calls] == ["q"]
 
-    def test_queries_per_iteration_uses_first_recommended(self):
+    def test_queue_width_uses_first_recommended(self):
         auditor = FakeAuditor(
             [
                 _verdict(
@@ -240,7 +240,7 @@ class TestIterate:
                 "q",
                 search_and_extract=search,
                 auditor=auditor,
-                queries_per_iteration=1,
+                queue_width=1,
                 max_iterations=5,
             )
         )
