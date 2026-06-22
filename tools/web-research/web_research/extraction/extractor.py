@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 
 import httpx
 
 from web_research.extraction.prompts import build_prompt
 from web_research.extraction.protocols import ExtractionConfig, ExtractionResult
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaExtractor:
@@ -24,6 +27,14 @@ class OllamaExtractor:
             focus=config.focus,
         )
 
+        logger.debug(
+            "extract start: model=%s prompt_type=%s focus=%s input_chars=%d",
+            config.model,
+            config.prompt_type,
+            config.focus,
+            len(text),
+        )
+
         payload = {
             "model": config.model,
             "messages": [{"role": "user", "content": prompt_text}],
@@ -33,6 +44,9 @@ class OllamaExtractor:
         }
 
         start = time.monotonic()
+        # TODO: option-2 hardening — wrap the POST in try/except httpx.HTTPError,
+        # log context, and re-raise as a domain-specific ExtractionError so callers
+        # can distinguish transport failures from extraction failures.
         response = httpx.post(
             f"{self._base_url}/api/chat",
             json=payload,
@@ -40,7 +54,29 @@ class OllamaExtractor:
         )
         elapsed = time.monotonic() - start
 
-        data = json.loads(response.json()["message"]["content"])
+        # TODO: option-2 hardening — catch (KeyError, json.JSONDecodeError) here,
+        # log the raw response body, and raise a clear error; a malformed model
+        # reply currently surfaces as an opaque KeyError/JSONDecodeError.
+        try:
+            data = json.loads(response.json()["message"]["content"])
+        except (KeyError, ValueError):
+            logger.warning(
+                "extract failed to parse response: model=%s prompt_type=%s "
+                "status=%s elapsed=%.2fs",
+                config.model,
+                config.prompt_type,
+                response.status_code,
+                elapsed,
+            )
+            raise
+
+        logger.info(
+            "extract ok: model=%s prompt_type=%s elapsed=%.2fs fields=%d",
+            config.model,
+            config.prompt_type,
+            elapsed,
+            len(data) if isinstance(data, dict) else 0,
+        )
 
         return ExtractionResult(
             data=data,

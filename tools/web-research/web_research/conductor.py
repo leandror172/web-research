@@ -74,14 +74,14 @@ def iterate(
     search_and_extract,
     auditor,
     max_iterations: int = 3,
-    queries_per_iteration: int = 2,
+    queue_width: int = 2,
     on_iteration_start: Callable[[int, int, str], None] | None = None,
     on_pre_audit: Callable[[str], None] | None = None,
     **search_kwargs: Any,
 ) -> Iterator[IterationResult]:
     """Yield one IterationResult per round.
 
-    Each verdict's recommended_queries (up to queries_per_iteration) are
+    Each verdict's recommended_queries (up to queue_width) are
     enqueued for future rounds; duplicate queries are skipped. Stops on a
     sufficient verdict, audit failure, exhausted queue, or max_iterations.
     """
@@ -129,7 +129,7 @@ def iterate(
         if verdict is not None:
             enqueued = 0
             for q in verdict.recommended_queries:
-                if enqueued >= queries_per_iteration:
+                if enqueued >= queue_width:
                     break
                 if q not in seen:
                     pending.append(q)
@@ -151,7 +151,7 @@ def research_topic(
     search_and_extract,
     auditor,
     max_iterations: int = 3,
-    queries_per_iteration: int = 2,
+    queue_width: int = 2,
     **search_kwargs: Any,
 ) -> ResearchResult:
     """Drain iterate() into a ResearchResult."""
@@ -161,7 +161,7 @@ def research_topic(
             search_and_extract=search_and_extract,
             auditor=auditor,
             max_iterations=max_iterations,
-            queries_per_iteration=queries_per_iteration,
+            queue_width=queue_width,
             **search_kwargs,
         )
     )
