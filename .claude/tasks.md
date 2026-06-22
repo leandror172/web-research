@@ -66,8 +66,8 @@ information from web pages. Single script, no agents, no search.
 - [x] Audit logging — INFO-level verdict + stop-reason logs in auditor.py and conductor.py; `WR_LOG_LEVEL` bumped to INFO
 
 ### Deferred / follow-on
-- [ ] (T-02) **Add store/extractor logging** — `logger.debug()`/`logger.info()` to `store.py` and extractor pipeline; auditor/conductor now covered, store/extractor still dark under `--log-level DEBUG`
-- [ ] (T-03) **Rename `queries_per_iteration` → `queue_width`** — current name implies parallelism; deferred until more callers exist
+- [x] (T-02) **Add store/extractor logging** — `logger.debug()`/`logger.info()` to `store.py` and extractor pipeline; auditor/conductor now covered, store/extractor still dark under `--log-level DEBUG`
+- [x] (T-03) **Rename `queries_per_iteration` → `queue_width`** — current name implies parallelism; deferred until more callers exist
 
 ## Phase 4: Claude Code Integration
 
