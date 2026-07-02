@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from web_research.auditor.model_checker import SufficiencyVerdict
 from web_research.conductor import (
     IterationResult,
@@ -268,6 +270,210 @@ class TestIterate:
         assert results[0].verdict is None
         assert results[0].audit_failed is False
         assert [c[0] for c in search.calls] == ["q"]
+
+
+class FakeEventLog:
+    def __init__(self):
+        self.events: list[dict] = []
+
+    def emit(self, event: dict) -> None:
+        self.events.append(event)
+
+    def of_type(self, name: str) -> list[dict]:
+        return [e for e in self.events if e["event"] == name]
+
+
+# Stop-reason taxonomy — the session_end vocabulary the event log records.
+# Where a string already exists in conductor.py log messages or verdict
+# fields, the reason reuses it so both trails tell the same story.
+STOP_SUFFICIENT = "sufficient"
+STOP_AUDIT_FAILED = "audit_failed"
+STOP_QUEUE_EXHAUSTED = "queue_exhausted"
+STOP_MAX_ITERATIONS = "max_iterations"
+STOP_NO_AUDITOR = "single_pass"
+STOP_ABANDONED = "abandoned"
+STOP_ERROR = "error"
+
+
+class TestEventLog:
+    def _run(self, auditor, search, events, **kwargs):
+        return list(
+            iterate(
+                "q",
+                search_and_extract=search,
+                auditor=auditor,
+                events=events,
+                **kwargs,
+            )
+        )
+
+    def test_session_start_carries_run_parameters(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([_verdict(sufficient=True)]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+            max_iterations=3,
+            queue_width=2,
+        )
+        (start,) = events.of_type("session_start")
+        assert start["query"] == "q"
+        assert start["max_iterations"] == 3
+        assert start["queue_width"] == 2
+
+    def test_sufficient_run_emits_full_lifecycle_in_order(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([_verdict(sufficient=True, confidence="high")]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+        )
+        assert [e["event"] for e in events.events] == [
+            "session_start",
+            "iteration_start",
+            "extract_complete",
+            "audit_verdict",
+            "session_end",
+        ]
+        verdict = events.of_type("audit_verdict")[0]
+        assert verdict["sufficient"] is True
+        assert verdict["confidence"] == "high"
+        assert verdict["audit_failed"] is False
+        assert events.of_type("extract_complete")[0]["new_urls"] == ["u1"]
+
+    def test_query_enqueued_emitted_per_accepted_recommendation(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor(
+                [
+                    _verdict(sufficient=False, recommended_queries=["q2", "q3"]),
+                    _verdict(sufficient=True),
+                ]
+            ),
+            FakeSearchAndExtract({"q": ["u1"], "q2": ["u2"]}),
+            events,
+            queue_width=2,
+        )
+        assert [e["query"] for e in events.of_type("query_enqueued")] == ["q2", "q3"]
+
+    def test_audit_failure_verdict_event_has_null_fields(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([RuntimeError("model unreachable")]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+        )
+        verdict = events.of_type("audit_verdict")[0]
+        assert verdict["audit_failed"] is True
+        assert verdict["sufficient"] is None
+        assert verdict["confidence"] is None
+        assert verdict["recommended_queries"] == []
+
+    def test_session_end_is_always_last(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([_verdict(sufficient=True)]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+        )
+        assert events.events[-1]["event"] == "session_end"
+        assert "stop_reason" in events.events[-1]
+        assert "iterations_run" in events.events[-1]
+
+    def test_abandoned_generator_still_emits_session_end(self):
+        events = FakeEventLog()
+        gen = iterate(
+            "q",
+            search_and_extract=FakeSearchAndExtract({"q": ["u1"]}),
+            auditor=FakeAuditor(
+                [_verdict(sufficient=False, recommended_queries=["q2"])]
+            ),
+            events=events,
+        )
+        next(gen)  # consume one result, then walk away
+        gen.close()
+        assert events.events[-1]["event"] == "session_end"
+
+    # ---- stop-reason taxonomy (assertions come alive once the TODOs above
+    # ---- and the matching sites in conductor.py are filled in)
+
+    def test_stop_reason_sufficient(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([_verdict(sufficient=True)]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+        )
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_SUFFICIENT
+
+    def test_stop_reason_audit_failed(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([RuntimeError("boom")]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+        )
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_AUDIT_FAILED
+
+    def test_stop_reason_queue_exhausted(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor([_verdict(sufficient=False, recommended_queries=[])]),
+            FakeSearchAndExtract({"q": ["u1"]}),
+            events,
+            max_iterations=5,
+        )
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_QUEUE_EXHAUSTED
+
+    def test_stop_reason_max_iterations(self):
+        events = FakeEventLog()
+        self._run(
+            FakeAuditor(
+                [
+                    _verdict(sufficient=False, recommended_queries=["q2"]),
+                    _verdict(sufficient=False, recommended_queries=["q3"]),
+                ]
+            ),
+            FakeSearchAndExtract({"q": ["u1"], "q2": ["u2"]}),
+            events,
+            max_iterations=2,
+        )
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_MAX_ITERATIONS
+
+    def test_stop_reason_no_auditor(self):
+        events = FakeEventLog()
+        self._run(None, FakeSearchAndExtract({"q": ["u1"]}), events)
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_NO_AUDITOR
+
+    def test_stop_reason_abandoned(self):
+        events = FakeEventLog()
+        gen = iterate(
+            "q",
+            search_and_extract=FakeSearchAndExtract({"q": ["u1"]}),
+            auditor=FakeAuditor(
+                [_verdict(sufficient=False, recommended_queries=["q2"])]
+            ),
+            events=events,
+        )
+        next(gen)
+        gen.close()
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_ABANDONED
+
+    def test_stop_reason_error_when_pipeline_raises(self):
+        def exploding_search(query, **kwargs):
+            raise RuntimeError("fetch blew up")
+
+        events = FakeEventLog()
+        with pytest.raises(RuntimeError):
+            list(
+                iterate(
+                    "q",
+                    search_and_extract=exploding_search,
+                    auditor=FakeAuditor([_verdict(sufficient=True)]),
+                    events=events,
+                )
+            )
+        assert events.of_type("session_end")[0]["stop_reason"] == STOP_ERROR
 
 
 class TestResearchTopic:
