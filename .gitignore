@@ -24,3 +24,7 @@ tools/web-research/output/
 .python-version
 /.claude/settings.local.json
 /.idea/*
+# Local tool state (machine-specific)
+.rtk/
+.claude/settings.json
+.claude/.cozempic-init.lock
