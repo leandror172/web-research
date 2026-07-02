@@ -4,9 +4,10 @@
 
 ## Status
 
-Phase 3.7 complete (2026-06-09). Queue-based Conductor, MCP server live, Auditor shipped.
-Conductor uses deque queue; `queries_per_iteration=2`; Q2 fallback verified in real run.
-132 pytest tests passing. Next: store/extractor debug logging; 3.1 (CLI batch), 3.2 (JSONL event log).
+Phase 3.2 complete (2026-07-02). JSONL event log: `events.py`, Conductor emits lifecycle
+events, `session_end` guaranteed via finally (stop-reason taxonomy incl. abandoned/error).
+Queue-based Conductor (`queue_width=2`), MCP server live, Auditor shipped.
+159 pytest tests passing. Next: 3.1 (CLI batch, optional), Phase 4 (Claude Code integration).
 
 ## What This Project Is
 

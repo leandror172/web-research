@@ -111,3 +111,34 @@ position. `logging.basicConfig` in `main()` activates the root logger.
 
 **Dev convenience:** `Makefile` at repo root — `make logs` (`tail -F output/mcp-server-*.log`),
 `make test`. `-F` not `-f` — follows by name so it survives log rotation.
+
+## Event Log Design (Phase 3.2, 2026-07-02)
+
+`events.py`: `EventLog` Protocol (`emit(event: dict)`) + `JsonlEventLog` + module
+factory `default_event_log(output_dir)` → `output/events/events-{session_id}.jsonl`,
+session id embedded in the filename so replay tools can go from a record's
+`session_id` straight to its file. Stdlib only — schema ownership matters more than
+library features because the Auditor will eventually *read* these events.
+
+**Emit never raises:** failures log a WARNING and are swallowed — research must never
+break because of the audit trail. Same log-only philosophy as the extractor (Session 17).
+
+**session_end via try/finally in `iterate()`:** the generator has 4 normal exit paths
+(2 mid-loop returns, 2 loop-condition falls) plus consumer abandonment and in-flight
+exceptions. A `stop_reason` variable defaults to `abandoned`; each exit path overwrites
+it; the `finally` emits once. `GeneratorExit` (consumer closed us) stays `abandoned`;
+any other live exception in `sys.exc_info()` overrides to `error` — so replay analysis
+can exclude crashed sessions just like `audit_failed` ones.
+
+**Stop-reason taxonomy** (spec lives as `STOP_*` constants in `test_conductor.py`):
+`sufficient` / `audit_failed` / `queue_exhausted` / `max_iterations` / `single_pass`
+(auditor=None) / `abandoned` / `error`. Values reuse existing log-message vocabulary
+so both trails tell the same story. `queue_exhausted` vs `max_iterations` deliberately
+distinct: same outcome, opposite tuning diagnosis (Auditor out of ideas vs budget too small).
+
+**Session scoping asymmetry:** CLI builds one event log per process (one command = one
+session); MCP server builds one per `search_topic` call — the server process lives for
+days, a module-level log would smear unrelated sessions into one file.
+
+**audit_verdict emitted before the yield**, not after — a consumer abandoning at the
+yield would otherwise leave an executed audit unrecorded.

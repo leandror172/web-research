@@ -53,7 +53,7 @@ information from web pages. Single script, no agents, no search.
 ## Phase 3: MVP Core
 
 - [ ] 3.1 — CLI wrapper (query / url / batch subcommands) — optional, not blocking
-- [ ] 3.2 — JSONL event log (audit trail, replay) — optional, feeds Auditor
+- [x] 3.2 — JSONL event log (audit trail, replay) — `events.py` + Conductor wiring + CLI/MCP integration; stop-reason taxonomy incl. `abandoned`/`error` via finally — complete 2026-07-02
 - [x] 3.3 — SQLite knowledge store (structured facts, basic querying) — complete 2026-04-07
 - [x] 3.5 — MCP server — `web_research/mcp/server.py` + `run-server.sh` + `.mcp.json`; tools: `research_url`, `search_topic`, `query_knowledge`
 - [x] 3.4 — Sufficiency check (Auditor) — heuristic gate → model checker (qwen3:14b, YAML renderer)

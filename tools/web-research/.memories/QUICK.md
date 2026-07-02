@@ -4,8 +4,9 @@
 
 ## Status
 
-Phase 3 complete (2026-05-07). Conductor + Auditor + MCP server all live.
+Phase 3 complete incl. 3.2 event log (2026-07-02). Conductor + Auditor + MCP server live.
 CLI: `web-research extract <url>` and `web-research search <query>`.
+Research sessions write JSONL audit trails to `output/events/events-{session_id}.jsonl`.
 
 ## Pipeline
 
@@ -32,6 +33,7 @@ web_research/
   auditor/      # signals.py, renderers.py, model_checker.py, auditor.py, prompts/sufficiency.md
   mcp/          # server.py — research_url, search_topic, query_knowledge
   conductor.py  # iterate() + research_topic() + build_default_auditor()
+  events.py     # EventLog protocol, JsonlEventLog, default_event_log factory
   cli.py        # argparse — extract + search subcommands; --log-level per subcommand
 ```
 
@@ -52,3 +54,4 @@ make logs    # tail -F output/mcp-server-*.log
 - Auditor design (cascade, YAML renderer, heuristic asymmetry)
 - Conductor design (iterator pattern, callback hooks, MCP stdout constraint)
 - Progress logging architecture
+- Event log design (finally guarantee, stop-reason taxonomy, session scoping)
