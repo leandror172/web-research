@@ -32,10 +32,13 @@ web-research/
 - **Tools don't import each other** — engine dispatches via protocol-based interfaces (CLI/HTTP/MCP)
 - **Per-folder .memories/** — QUICK.md (always loaded) + KNOWLEDGE.md (on demand)
 - **Local models first** — Ollama for extraction/codegen; frontier models (Claude) optional
+- **Function decomposition** — split on decision count, not lines; helpers named as
+  algorithm steps; null-object over None-guards. [ref:function-decomposition]
 
 ## Deeper Memory → KNOWLEDGE.md
 
 - **Tool Isolation** — bounded-context architecture, no shared imports
+- **Function Decomposition Pattern** — when/how to split big functions (from PR #12 refactor)
 - **Search Provider Strategy** — Protocol-based, Firecrawl first, local SearXNG planned
 - **Phase Plan** — 1 (spike) → 2A (search) → 2B (orchestrator) → 3 (Conductor+Auditor+MCP, done) → 3.7 (queue, done)
 - **Cross-Repo Connections** — ties to LLM platform and expense classifier projects

@@ -5,11 +5,16 @@ from __future__ import annotations
 import json
 import logging
 
-from web_research.events import JsonlEventLog, default_event_log
+from web_research.events import JsonlEventLog, NullEventLog, default_event_log
 
 
 def read_lines(path):
     return [json.loads(line) for line in path.read_text().splitlines()]
+
+
+class TestNullEventLog:
+    def test_emit_is_a_silent_noop(self):
+        NullEventLog().emit({"event": "session_start"})
 
 
 class TestEmit:

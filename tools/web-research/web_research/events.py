@@ -18,6 +18,14 @@ class EventLog(Protocol):
     def emit(self, event: dict[str, Any]) -> None: ...
 
 
+class NullEventLog:
+    """No-op sink — lets consumers treat 'no event log' as a normal EventLog
+    instead of guarding every emit call with a None check."""
+
+    def emit(self, event: dict[str, Any]) -> None:
+        pass
+
+
 class JsonlEventLog:
     """EventLog that appends one JSON object per line to a file."""
 

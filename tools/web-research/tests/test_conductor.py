@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import pytest
 
+from collections import deque
+
 from web_research.auditor.model_checker import SufficiencyVerdict
 from web_research.conductor import (
     IterationResult,
     ResearchResult,
+    _emit_session_end,
+    _enqueue_recommended_queries,
+    _stop_reason_after_audit,
+    _stop_reason_at_loop_exit,
     iterate,
     research_topic,
 )
@@ -252,6 +258,30 @@ class TestIterate:
         assert results[1].verdict is not None
         assert results[1].verdict.sufficient is True
 
+    def test_duplicate_recommendation_does_not_consume_queue_slot(self):
+        # queue_width caps *enqueued* queries, not candidates examined:
+        # "q" (a duplicate) is skipped and q2/q3 both get their slot
+        auditor = FakeAuditor(
+            [
+                _verdict(sufficient=False, recommended_queries=["q", "q2", "q3"]),
+                _verdict(sufficient=False, recommended_queries=[]),
+                _verdict(sufficient=False, recommended_queries=[]),
+            ]
+        )
+        search = FakeSearchAndExtract({"q": ["u1"], "q2": ["u2"], "q3": ["u3"]})
+
+        results = list(
+            iterate(
+                "q",
+                search_and_extract=search,
+                auditor=auditor,
+                queue_width=2,
+                max_iterations=5,
+            )
+        )
+
+        assert [r.query_used for r in results] == ["q", "q2", "q3"]
+
     def test_no_audit_runs_single_iteration(self):
         search = FakeSearchAndExtract({"q": ["u1"]})
 
@@ -474,6 +504,76 @@ class TestEventLog:
                 )
             )
         assert events.of_type("session_end")[0]["stop_reason"] == STOP_ERROR
+
+
+class TestStopReasonHelpers:
+    def test_audit_failed_wins(self):
+        assert _stop_reason_after_audit(None, True, 0) == STOP_AUDIT_FAILED
+
+    def test_sufficient_verdict_stops(self):
+        assert (
+            _stop_reason_after_audit(_verdict(sufficient=True), False, 0)
+            == STOP_SUFFICIENT
+        )
+
+    def test_insufficient_verdict_continues(self):
+        assert _stop_reason_after_audit(_verdict(sufficient=False), False, 0) is None
+
+    def test_empty_queue_is_exhausted(self):
+        assert _stop_reason_at_loop_exit(deque(), 2, 5) == STOP_QUEUE_EXHAUSTED
+
+    def test_nonempty_queue_means_max_iterations(self):
+        assert _stop_reason_at_loop_exit(deque(["q2"]), 5, 5) == STOP_MAX_ITERATIONS
+
+
+class TestEnqueueRecommendedQueries:
+    def _enqueue(self, recommended, seen, queue_width=2):
+        pending: deque[str] = deque()
+        events = FakeEventLog()
+        _enqueue_recommended_queries(
+            _verdict(sufficient=False, recommended_queries=recommended),
+            pending,
+            seen,
+            queue_width,
+            events,
+            iteration=0,
+        )
+        return pending, seen, events
+
+    def test_none_verdict_is_noop(self):
+        pending: deque[str] = deque()
+        _enqueue_recommended_queries(None, pending, {"q"}, 2, FakeEventLog(), 0)
+        assert not pending
+
+    def test_caps_enqueued_not_candidates_examined(self):
+        # the duplicate must not burn a slot — q2 and q3 both make it in
+        pending, seen, events = self._enqueue(["q", "q2", "q3"], {"q"}, queue_width=2)
+        assert list(pending) == ["q2", "q3"]
+        assert seen == {"q", "q2", "q3"}
+        assert [e["query"] for e in events.of_type("query_enqueued")] == ["q2", "q3"]
+
+    def test_respects_queue_width(self):
+        pending, _, _ = self._enqueue(["q2", "q3", "q4"], {"q"}, queue_width=2)
+        assert list(pending) == ["q2", "q3"]
+
+
+class TestEmitSessionEnd:
+    def test_no_exception_keeps_stop_reason(self):
+        events = FakeEventLog()
+        _emit_session_end(events, STOP_SUFFICIENT, 1, (None, None, None))
+        assert events.events[0]["stop_reason"] == STOP_SUFFICIENT
+        assert events.events[0]["iterations_run"] == 1
+
+    def test_generator_exit_stays_abandoned(self):
+        events = FakeEventLog()
+        _emit_session_end(events, STOP_ABANDONED, 1, (GeneratorExit, GeneratorExit(), None))
+        assert events.events[0]["stop_reason"] == STOP_ABANDONED
+
+    def test_other_exception_overrides_to_error(self):
+        events = FakeEventLog()
+        exc = RuntimeError("boom")
+        _emit_session_end(events, STOP_ABANDONED, 1, (RuntimeError, exc, None))
+        assert events.events[0]["stop_reason"] == STOP_ERROR
 
 
 class TestResearchTopic:

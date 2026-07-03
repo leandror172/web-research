@@ -298,4 +298,4 @@ What's novel here is **applying DDD's strategic patterns (context mapping, subdo
 2. **How does this interact with fine-tuning?** A fine-tuned 7B for extraction might outperform a general 14B — the subdomain classification changes.
 3. **Does this pattern hold for frontier models?** With 200K context and fast inference, the "split for context efficiency" argument weakens. The "split for domain clarity" argument may still hold.
 4. **How does this relate to CrewAI/AutoGen/LangGraph agent patterns?** Are they implicitly doing DDD, or are they ignoring it?
-<\!-- /ref:ddd-agent-modeling -->
+<!-- /ref:ddd-agent-modeling -->
