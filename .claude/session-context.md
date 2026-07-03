@@ -9,17 +9,15 @@
 <!-- /ref:user-prefs -->
 
 <!-- ref:current-status -->
-## Current Status
-
-- **Active branch:** `feat/store-extractor-logging` — PR #11 open (store/extractor logging + queue_width rename); `master` is Phase 3.7 merged
-- **Completed:** Phase 3 fully merged; 3.7 (queue-based Conductor) on master; store/extractor logging + queue_width rename done (PR #11, pending merge)
-- **Conductor:** `iterate()` uses `deque`-based queue; `queue_width=2` default (renamed from `queries_per_iteration`); `seen` set prevents duplicate queries; Q2 fallback verified in real run
-- **Logging:** auditor.py + conductor.py + store.py + extractor.py all emit logs — store INFO on save / DEBUG on reads, extractor INFO on completion / DEBUG pre-call / WARNING on malformed response; `WR_LOG_LEVEL=INFO` in `.mcp.json`
-- **Tests:** 132 pytest tests passing
-- **MCP server:** live; logs to `tools/web-research/output/mcp-server-{pid}.log`; `WR_LOG_LEVEL` in `.mcp.json`; `make logs` to tail
-- **Auditor:** heuristic gate → model checker (qwen3:14b, YAML renderer); YAML confirmed production default (A/B benchmark)
+- **Active branch:** `feat/jsonl-event-log` — PR #12 open (JSONL event log, Phase 3.2); `master` has triage commits (gitattributes, run-server PATH fix) pushed
+- **Completed:** Phase 3 fully done — 3.2 (JSONL event log) was the last non-optional item; PR #11 (store/extractor logging + queue_width) merged earlier
+- **Event log:** `events.py` — EventLog Protocol + JsonlEventLog + `default_event_log`; Conductor emits 6 lifecycle event types; `session_end` guaranteed via finally; stop reasons: sufficient / audit_failed / queue_exhausted / max_iterations / single_pass / abandoned / error; files at `output/events/events-{session_id}.jsonl`
+- **Conductor:** `iterate()` deque queue, `queue_width=2`, `seen` dedup; accepts `events` sink
+- **Tests:** 159 pytest tests passing (TDD: taxonomy spec lives as `STOP_*` constants in test_conductor.py)
+- **MCP server:** live; per-PID logs + per-call event logs under `output/`; `WR_LOG_LEVEL` in `.mcp.json`; `make logs`
+- **Auditor:** heuristic gate → model checker (qwen3:14b, YAML renderer)
 - **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
-- **Next:** Merge PR #11; 3.1 (CLI batch), 3.2 (JSONL event log)
+- **Next:** Merge PR #12; then Phase 4.1 (`/research` skill) or 3.1 (CLI batch)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->
@@ -79,4 +77,6 @@ Spike plan: `/mnt/i/workspaces/llm/docs/research/mvp-spike-plan.md`
 
 | Task | Read first | Notes |
 |------|-----------|-------|
+| 4.1 `/research` MCP skill | `tools/web-research/web_research/mcp/server.py`; tool QUICK.md | Wrap existing 3 MCP tools into a workflow skill |
+| (T-05) Event-log replay tooling | KNOWLEDGE.md § "Event Log Design"; `web_research/events.py` | Schema + stop-reason taxonomy are the contract |
 <!-- /ref:session-reading-guide -->

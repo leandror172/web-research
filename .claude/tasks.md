@@ -77,4 +77,6 @@ information from web pages. Single script, no agents, no search.
 <!-- ref:deferred -->
 ## Deferred / Backlog
 
+- [ ] (T-04) **Per-URL pipeline events** — extend event granularity into `search_and_extract` (fetch/clean/extract per page); deferred from 3.2 scope decision
+- [ ] (T-05) **Event-log replay tooling** — reader/CLI over `output/events/*.jsonl`; groups sessions by stop_reason, excludes error/audit_failed from sufficiency tuning; feeds Auditor
 <!-- /ref:deferred -->
