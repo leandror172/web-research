@@ -49,6 +49,7 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `tools/web-research/web_research/extraction/protocols.py` | Protocol definitions and dataclasses for extraction pipeline |
 | `tools/web-research/web_research/extraction/models.py` | Model context-window lookup — Ollama API + JSON override + fallback |
 | `tools/web-research/web_research/knowledge/store.py` | SQLite knowledge store — save/query/has_url across sessions |
+| `tools/web-research/web_research/events.py` | JSONL event log — EventLog protocol, JsonlEventLog, default_event_log factory |
 | `tools/web-research/web_research/mcp/server.py` | FastMCP server — research_url, search_topic, query_knowledge tools |
 | `tools/web-research/run-server.sh` | MCP server entry point — stdio transport, cd to project dir before uv run |
 | `.mcp.json` | Repo-level MCP registration for Claude Code |
@@ -57,6 +58,8 @@ Keep blocks narrow enough that `ref-lookup.sh KEY` returns only what's needed fo
 | `tools/web-research/tests/extraction/` | Unit tests: chunker, cleaners, merger, models, output |
 | `tools/web-research/tests/search/` | Unit tests: filters |
 | `tools/web-research/tests/knowledge/` | Unit tests: store (Phase 3.3 coverage) |
+| `tools/web-research/tests/test_events.py` | Unit tests: JsonlEventLog + default_event_log factory |
+| `tools/web-research/tests/test_cli_events.py` | Unit tests: CLI search-loop event-log wiring |
 | `tools/web-research/benchmarks/auditor_ab.py` | A/B benchmark: YAML vs Prose renderer — pins signals+entries, calls ModelChecker directly, `temperature=0`+seed for determinism |
 
 ---

@@ -20,11 +20,14 @@ from mcp.server.fastmcp import FastMCP
 
 from web_research.cli import extract_single_url, search_and_extract
 from web_research.conductor import ResearchResult, build_default_auditor, research_topic
+from web_research.events import default_event_log
 from web_research.knowledge.store import KnowledgeStore
+
+_OUTPUT_DIR = pathlib.Path(__file__).parents[2] / "output"
 
 _log_level = os.environ.get("WR_LOG_LEVEL", "WARNING").upper()
 _log_dir = pathlib.Path(
-    os.environ.get("WR_LOG_FILE", str(pathlib.Path(__file__).parents[2] / "output" / "mcp-server.log"))
+    os.environ.get("WR_LOG_FILE", str(_OUTPUT_DIR / "mcp-server.log"))
 ).parent
 _log_file = _log_dir / f"mcp-server-{os.getpid()}.log"
 _log_dir.mkdir(parents=True, exist_ok=True)
@@ -127,11 +130,13 @@ def search_topic(query: str, top: int = 3, max_iterations: int = 3) -> dict[str,
         top:            Usable results to extract per iteration (default 3).
         max_iterations: Maximum research rounds before stopping (default 3).
     """
+    events = default_event_log(_OUTPUT_DIR)
     result = research_topic(
         query,
         search_and_extract=_search_and_extract_fn,
         auditor=_auditor,
         max_iterations=max_iterations,
+        events=events,
         store=_store,
         top=top,
     )

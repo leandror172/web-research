@@ -62,6 +62,40 @@ expensive to inject everywhere. Two files per folder is the minimum viable unit.
 
 **Implication:** Any folder with its own distinct domain gets its own `.memories/`.
 
+<!-- ref:function-decomposition -->
+## Function Decomposition Pattern (2026-07-03)
+
+How to judge when a function is too big and how to split it — established while
+refactoring `conductor.iterate()` (110 → 55 lines, PR #12).
+
+**When to split — count decisions, not lines.** A long function with one linear
+path (e.g. `JsonlEventLog.emit`) is fine. Split when multiple *decision* steps
+interleave with boilerplate: `iterate()` had ~10 branch points and 4 exit paths
+mixed with event-emission ceremony.
+
+**How to split:**
+- **Helper names narrate algorithm steps** (`_run_search_step`, `_run_audit_step`,
+  `_enqueue_recommended_queries`) — not implementation ("init state") or a list of
+  cases. If the name doesn't describe a step of the domain algorithm, don't extract.
+- **Kill repeated `if x is not None` guards with a null-object** (`NullEventLog`),
+  not by copying the guard into every helper.
+- **Extract decisions as pure functions** returning a value (`_stop_reason_after_audit`
+  → `str | None`, None = continue) — unit-testable without the surrounding machinery.
+- **Make hidden state explicit parameters** for testability: pass `sys.exc_info()`
+  into the helper instead of calling it inside (caller reads it in the right frame).
+- **In generators, keep `yield`/`return`/`try-finally` in the generator itself** —
+  moving them changes semantics; only decisions and side-effects move out.
+- **Don't extract low-value units:** a helper returning 4 unrelated locals as a
+  tuple, or one smaller than its call site, makes the code worse.
+
+**Refactoring trap:** "limit N candidates examined" ≠ "limit N successes" — a plain
+`islice`/slice over candidates silently drops slots when the skip branch fires.
+Filter first, then slice (same lesson as `--top N`, see tools/web-research KNOWLEDGE).
+
+**Process:** tests first — pin the subtle behavior with a regression test (RED),
+add unit tests for each extracted pure helper, then refactor (GREEN).
+<!-- /ref:function-decomposition -->
+
 ## Cross-Repo Connections (2026-04-02)
 
 This project is part of a three-repo engineering portfolio:

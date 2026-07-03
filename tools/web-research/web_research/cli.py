@@ -15,6 +15,7 @@ from web_research.extraction.models import max_extract_chars
 from web_research.extraction.output import JsonOutputWriter
 from web_research.extraction.protocols import ExtractionConfig
 from web_research.conductor import build_default_auditor, iterate
+from web_research.events import default_event_log
 from web_research.knowledge.store import KnowledgeStore
 from web_research.search.firecrawl import FirecrawlSearchEngine
 from web_research.search.filters import is_blacklisted
@@ -196,6 +197,9 @@ def _run_search(args, store: KnowledgeStore | None) -> None:
     auditor = None if args.no_audit or store is None else build_default_auditor(store)
     max_iter = 1 if args.no_audit else args.max_iterations
 
+    events = default_event_log(args.output_dir)
+    print(f"Event log: {events.path}")
+
     def _on_iteration_start(iteration: int, max_iterations: int, query: str) -> None:
         bar = "─" * 58
         print(f"\n┌{bar}┐")
@@ -213,6 +217,7 @@ def _run_search(args, store: KnowledgeStore | None) -> None:
         max_iterations=max_iter,
         on_iteration_start=_on_iteration_start,
         on_pre_audit=_on_pre_audit,
+        events=events,
     ):
         final = result
         _print_iteration_summary(result)
