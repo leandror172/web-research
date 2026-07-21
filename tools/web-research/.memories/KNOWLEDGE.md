@@ -142,3 +142,45 @@ days, a module-level log would smear unrelated sessions into one file.
 
 **audit_verdict emitted before the yield**, not after — a consumer abandoning at the
 yield would otherwise leave an executed audit unrecorded.
+
+## Heuristic Gate Short-Circuits the Loop (2026-07-21, from 2026-07-11 run logs)
+
+First real-run data on loop behavior — 10 sessions in `output/events/`, the evidence the
+parked "Auditor loop tuning" item was waiting for.
+
+**Outcomes:** 6 `queue_exhausted`, 3 `max_iterations`, 1 `sufficient`.
+
+**All 6 `queue_exhausted` runs ended at iteration 1** after extracting 0–1 URLs, each with
+the signature `sufficient=False, confidence=high, recommended_queries=[]`.
+
+**Mechanism** (traced in source): `HeuristicChecker.obviously_insufficient` fires when
+`result_count < min_results` (2) and returns a verdict with `recommended_queries=[]` →
+`_enqueue_recommended_queries` adds nothing → `pending` is empty → the loop exits as
+`queue_exhausted`. **The model checker is never called**, so the only component that could
+have proposed a rephrasing never runs.
+
+**Two consequences:**
+1. *Recoverable → terminal.* A badly-phrased first query is indistinguishable from a topic
+   with no coverage. Both die at iteration 1.
+2. *Taxonomy corruption.* The run is logged `queue_exhausted` — "the Auditor ran out of
+   ideas" — when the Auditor was never consulted. That is precisely the distinction
+   `queue_exhausted` vs `max_iterations` exists to preserve.
+
+**This retires Ideas 1 and 2 as the priority** (§ `auditor-iteration-control-ideas`). Both
+were designed for a loop that stops *too late* or too optimistically. The observed failure
+is the opposite — it stops too early, and not from model judgment but from a gate that
+bypasses the model. The data specifically does not support either: only one `sufficient`
+verdict occurred and it was `confidence=high`, so no low-confidence sufficients appeared
+(Idea 1's target), and the loop never overshot (Idea 2's target).
+
+**Idea 3 — now the priority:** any eval that gates control flow must emit a *recovery
+action*, not just a judgment. Options: have the heuristic fall through to the model checker
+instead of returning early; or give it a cheap deterministic rephrasing (broaden/relax the
+query) so the queue is never empty for lack of ideas.
+
+**Observability gap found while diagnosing this:** `audit_verdict` events don't record
+*which stage* produced the verdict. Heuristic vs model was inferred from the signature —
+`sufficient=False` + `confidence=high` + empty `recommended_queries` is the heuristic's
+only possible return, since the model prompt always asks for concrete next searches when
+insufficient. Add `source: "heuristic" | "model"` to the event so this is directly
+readable rather than inferred.

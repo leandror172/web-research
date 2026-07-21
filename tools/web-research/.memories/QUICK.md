@@ -40,13 +40,18 @@ web_research/
 ## Dev Commands
 
 ```bash
-make test    # uv run --group dev pytest (132 tests)
+# NOTE: the Makefile lives at the REPO ROOT — run these from there,
+# not from tools/web-research/ (which has no Makefile).
+make test    # uv run --group dev pytest (172 tests, 14 modules)
 make logs    # tail -F output/mcp-server-*.log
 ```
 
 ## Parked / Revisit
 
-- **Auditor loop tuning** — confidence threshold (Idea 1) vs iteration-aware prompt (Idea 2); 3.6 is shipped, revisit with real-run log data. Task 3.7 in `.claude/tasks.md`. [ref:auditor-iteration-control-ideas]
+- **Auditor loop tuning** — unblocked: real-run data arrived (10 sessions, 2026-07-11).
+  The heuristic gate short-circuits the loop in 6/10 runs; Ideas 1–2 target the *opposite*
+  failure mode and are no longer the priority. → KNOWLEDGE.md § "Heuristic Gate
+  Short-Circuits the Loop"; task (T-07). [ref:auditor-iteration-control-ideas]
 
 ## Deeper Memory → KNOWLEDGE.md
 

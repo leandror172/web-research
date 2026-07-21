@@ -63,6 +63,28 @@ If low-confidence sufficients are frequent and correlate with bad outputs, Idea 
 a quick fix. If the loop routinely overshoots, Idea 2 is the more architecturally
 aligned solution.
 
+## ANSWERED — real-run data, 2026-07-21 (10 sessions from 2026-07-11)
+
+The revisit questions above now have answers, and **neither Idea 1 nor Idea 2 is the
+priority.** Both assume the loop stops too late; it stops too early.
+
+| Revisit question | Answer from the logs |
+|---|---|
+| `max_iterations` vs early stop? | 6 `queue_exhausted` (all at iteration 1), 3 `max_iterations`, 1 `sufficient` — the loop **under-runs**, it does not overshoot |
+| Low-confidence sufficients frequent? | **No.** Exactly one `sufficient` verdict occurred, at `confidence=high` — Idea 1's target case never appeared |
+| Do `recommended_queries` converge or drift? | Can't tell yet — 6 runs produced **zero** recommendations because the model checker never ran |
+
+**Root cause:** the `HeuristicChecker` gate returns `recommended_queries=[]` on
+`result_count < 2`, which empties the queue and terminates the loop before the model
+checker is consulted. Full mechanism and evidence in
+`tools/web-research/.memories/KNOWLEDGE.md` § "Heuristic Gate Short-Circuits the Loop".
+
+**Idea 3 (new, now the priority) — the gate must emit a recovery action, not just a
+judgment.** Either fall through to the model checker instead of returning early, or attach
+a cheap deterministic rephrasing (broaden/relax the query) so the queue is never empty for
+lack of ideas. Ideas 1 and 2 stay parked — they may become relevant once the loop actually
+reaches later iterations often enough to overshoot.
+
 ## Combined option
 
 The two are not exclusive. Idea 2 handles the "should I say sufficient at all" decision;
