@@ -21,6 +21,23 @@ the purpose of delegation.
 - Good: "If an id is provided, verify it exists in the log. If not found, warn to
   stderr and continue — don't block the insert."
 
+### Code shape: require modular, single-responsibility output
+
+Add these constraints to every non-trivial `generate_code` prompt to get
+controller/service-style decomposition instead of monolithic functions:
+
+```
+CONSTRAINTS (apply to all generated code):
+- Each function has exactly one responsibility — if its name would need "and", split it
+- Name functions after what they return or do (e.g., _build_refs_block — never process_data)
+- Function bodies read as delegated steps: call named helpers, combine, return — no inline logic mixed with I/O
+- Max ~15 lines per function body; extract inner concepts into named helpers when longer
+```
+
+**Why:** A function body that reads like a list of named helper calls is self-documenting at
+the call site. The logic lives inside those helpers. This also makes verdicts easier to
+assign — a structural defect in one helper is a local fix, not a rewrite of the whole function.
+
 ### When to call: always attempt the local model
 
 Try the local model first for any new file or function with more than ~5 lines of
@@ -44,6 +61,20 @@ trivial edits (adding a flag, a 2-line branch, a one-liner).
   must be loaded into VRAM separately. Always call models sequentially, even for
   benchmarking: tier 1 first; on a `0` verdict, then tier 2.
 
+### Refs context: inject project documentation
+
+Use `refs: ["key1", "key2"]` on `generate_code` or `ask_ollama` to inject
+documentation, rules, or decisions from any folder that uses the
+`<!-- ref:KEY -->` marker convention. The server resolves the keys and
+prepends them as a `<refs>` block — no Claude token cost.
+
+- Use for decisions, architecture rules, schema definitions, or prompting
+  guidelines that live in markdown but aren't code files.
+- Pass `refs_root` when working in a folder other than the default LLM repo.
+  Any folder with `*.md` files using `<!-- ref:KEY -->` markers works.
+- Combine with `context_files` freely: refs get prepended first (docs before code).
+- Find available keys with `ref_lookup(key="list", path="/abs/path/to/folder")`.
+
 ### Context files: pass what defines the behavior
 
 More signal in `context_files` means a higher verdict tier. Include:
@@ -59,9 +90,53 @@ More signal in `context_files` means a higher verdict tier. Include:
   is written and validated — a working file from the same framework is the
   strongest prompt context you have.
 
+### Output to file: generate directly into the codebase
+
+Use `output_file="rel/path/to/file.py"` to write the model's response directly
+to a file. Relative paths resolve from the project root (`REPO_ROOT`); absolute
+paths are used as-is. The response is returned to you AND written to the file.
+
+**Edit loop pattern:**
+1. `generate_code(prompt="...", output_file="src/foo.py")` — generates + writes
+2. Review the returned content, give a verdict
+3. For edits: `generate_code(prompt="fix X", context_files=[{"path": "/abs/src/foo.py"}])` —
+   local model edits its own prior output
+
+**`output_only=True`:** Returns only a compact status (`"Written N bytes to /path"`)
+instead of the full content. Use when the generated file is large and you plan to
+validate via tests rather than inline review. You MUST still give a verdict —
+read the file afterwards with `context_files` if needed to assess quality.
+
+Do NOT use `output_only=True` as a way to skip verdicts. The verdict (0/1/2) is
+required regardless of how you inspect the output.
+
+### patch_file: pinpoint edits without reading
+
+Use `patch_file(path, old_string, new_string)` to edit a file the local model
+wrote — without reading it back into Claude's context. Same semantics as the
+Edit tool: exact match, uniqueness check, error if not found or non-unique.
+
+```python
+# Generate a file
+generate_code(prompt="...", output_file="src/foo.py")
+
+# Fix one thing without re-reading the whole file
+patch_file("src/foo.py", old_string="def foo():", new_string="def foo(x: int):")
+
+# Use replace_all=True for renames across the file
+patch_file("src/foo.py", old_string="old_name", new_string="new_name", replace_all=True)
+```
+
+**When to use vs. Edit tool:**
+- `patch_file`: file was just generated; you already know what's in it; no prior Read in conversation.
+- Edit tool: file already existed in the codebase; you read it during orientation.
+
+Do not use `patch_file` as a way to avoid reading files you should understand
+before editing. It's for the specific case of editing freshly generated output.
+
 ## After you call
 
-### Step 1: Record a verdict for every local model call
+### Step 1: Record a verdict for every judgeable local model call
 
 After receiving output from `generate_code` or `ask_ollama`, record one of:
 
@@ -71,8 +146,29 @@ Verdict scale: 2 = accepted · 1 = improved · 0 = rejected
 - **1** — used with modifications. Note what changed and why.
 - **0** — not usable. Note the failure reason (logic error / wrong API / off-task).
 
-On verdicts 2 or 1, add a rough token estimate:
-`2 — ~300 est. Claude tokens saved` (formula: `(prompt chars + response chars) / 4`)
+**Write the verdict as this exact block. It is machine-captured; nothing else is stored.**
+A `PostToolUse` hook injects the template pre-filled with the call's `call_id` — fill the
+three placeholder lines and leave the rest alone:
+
+```
+[VERDICT call_id=<the id the hook gave you>]
+verdict: 2
+reason: <one line>
+est_claude_tokens: <number>
+[/VERDICT]
+```
+
+A `Stop` hook scans the turn for filled blocks and appends them to `calls.jsonl`.
+
+**Prose verdicts are NOT captured.** Writing `2 — ~300 est. Claude tokens saved` instead of
+the block means the judgment is thrown away. Between 2026-03 and 2026-07 this repo's docs
+taught the prose form while the hook only ever accepted the block, and ~90% of all verdicts
+were lost. Estimate tokens mentally: `(prompt chars + response chars) / 4`.
+
+If no template was injected, the call was not judgeable (or could not be identified) — write
+nothing. Not judged: `summarize` / `translate` / `classify_text`, and cold-start timeouts
+(retry instead). oficina runs are judged **per-run on the finished deliverable**, not per
+internal iteration.
 
 ### Step 2: If output is imperfect, classify the defect
 
