@@ -9,7 +9,7 @@
 <!-- /ref:user-prefs -->
 
 <!-- ref:current-status -->
-- **Active branch:** `feat/jsonl-event-log` — PR #12 open (JSONL event log, Phase 3.2 + iterate() decomposition refactor); `master` has triage commits (gitattributes, run-server PATH fix) pushed
+- **Active branch:** `master` — PR #12 **merged** (JSONL event log, Phase 3.2 + iterate() decomposition refactor); `feat/progress-logging` is the only branch still unmerged
 - **Completed:** Phase 3 fully done — 3.2 (JSONL event log) was the last non-optional item; PR #11 (store/extractor logging + queue_width) merged earlier
 - **Event log:** `events.py` — EventLog Protocol + JsonlEventLog + NullEventLog + `default_event_log`; Conductor emits 6 lifecycle event types; `session_end` guaranteed via finally; stop reasons: sufficient / audit_failed / queue_exhausted / max_iterations / single_pass / abandoned / error; files at `output/events/events-{session_id}.jsonl`
 - **Conductor:** `iterate()` decomposed into named step helpers (session 19) — deque queue, `queue_width=2`, `seen` dedup, filter-then-islice enqueue; accepts `events` sink; pattern documented as `ref:function-decomposition`
@@ -17,7 +17,7 @@
 - **MCP server:** live; per-PID logs + per-call event logs under `output/`; `WR_LOG_LEVEL` in `.mcp.json`; `make logs`
 - **Auditor:** heuristic gate → model checker (qwen3:14b, YAML renderer)
 - **Codegen model priority:** q3c30 > g3-12b > q25c14 > dsc16; context files lift both top models by ≥1 tier
-- **Next:** Merge PR #12; then Phase 4.1 (`/research` skill) or 3.1 (CLI batch)
+- **Next:** Phase 4.1 (`/research` skill) or 3.1 (CLI batch, optional)
 <!-- /ref:current-status -->
 
 <!-- ref:resume-steps -->

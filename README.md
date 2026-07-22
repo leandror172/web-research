@@ -167,7 +167,9 @@ A single "best model" doesn't exist — it depends on the task.
 | 3.4 — Auditor | Sufficiency review — heuristic gate + model checker (qwen3:14b) | Complete |
 | 3.5 — MCP server | Claude Code integration (`research_url`, `search_topic`, `query_knowledge`) | Complete |
 | 3.6 — Conductor | Iterative research loop driven by Auditor verdicts | Complete |
-| Next | CLI batch mode, JSONL event log, heuristic threshold tuning | Planned |
+| 3.7 — Queue-based research | `deque` follow-up queue (`queue_width=2`), `seen` dedup | Complete |
+| 3.2 — Event log | JSONL audit trail — 6 event types, stop-reason taxonomy | Complete |
+| Next | CLI batch mode (3.1), `/research` MCP skill (4.1), heuristic gate tuning | Planned |
 
 ## Design documents
 

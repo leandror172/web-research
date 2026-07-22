@@ -32,8 +32,9 @@ changes to the rest of the pipeline.
 
 ## Folder Convention (2026-03-26)
 
-- `spike/` — frozen proof-of-concepts. Reference only, not imported by production code.
-- `engine/` — orchestration layer (Conductor, Dispatcher, Auditor, Lens). Sits above tools.
+- `engine/` — *placeholder for* the orchestration layer (Dispatcher, Lens). **Still empty.**
+  Conductor and Auditor were built inside `tools/web-research/` instead; whether to migrate
+  them here or abandon this folder is undecided.
 - `tools/<name>/` — self-contained capabilities. Each has own package structure.
 - `docs/research/` — design decisions, benchmarks, architecture rationale.
 - `<folder>/.memories/` — per-folder context files modeled on cognitive memory types.
@@ -44,8 +45,17 @@ changes to the rest of the pipeline.
 |-------|-------|--------|
 | 1 — Spike | Extraction pipeline + model benchmarks | Complete (2026-03-26) |
 | 2A — Search | Search integration (Firecrawl + existing pipeline) | Complete (2026-03-27) |
-| 2B — Orchestrator | Content guard, result filtering, JS-rendered sites | Next |
-| 3+ — Agents | Full agent architecture, knowledge store, CLI, MCP server | Future |
+| 2B — Content quality | Content guard, result filtering, JS-rendered sites | Complete (2026-04-06) |
+| 3 — Research loop | Knowledge store, Auditor, MCP server, Conductor, queue, event log | Complete (2026-07-02) — except 3.1 CLI batch (optional, open) |
+| Orchestration layer | `engine/`: Dispatcher + Lens agents, config-driven orchestration | **Not started** |
+
+**Naming caveat — do not "restore" the old label.** This table used to read
+`2B — Orchestrator | Simple orchestrator (proto-Conductor, config-driven)`. A doc-refresh
+commit (`7a1cace`, 2026-04-02) kept the *label* but swapped the *scope* to the content-quality
+work, leaving a row whose name and contents described different things. The orchestrator work
+was never delivered as 2B: the Conductor arrived later as 3.6, and Dispatcher/Lens plus
+config-driven orchestration still do not exist. Marking that row "Complete" under the old
+label would assert a four-agent orchestration layer this repo does not have.
 
 ## Memory Architecture (2026-03-26)
 
